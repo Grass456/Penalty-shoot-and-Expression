@@ -1,0 +1,162 @@
+# ─────────────────────────────────────────────────────────────
+# PenalShoot-FER / 点球大战表情预测项目
+# ─────────────────────────────────────────────────────────────
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ---- 虚拟环境 ----
+venv/
+.venv/
+env/
+.env
+ENV/
+.conda/
+
+# ---- 包管理器 ----
+Pipfile
+Pipfile.lock
+poetry.lock
+# 保留 requirements.txt / environment.yml 作为依赖声明
+
+# ---- Jupyter / IPython ----
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# ---- 类型检查 / Lint 缓存 ----
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.dmypy.json
+dmypy.json
+
+# ---- IDE / 编辑器 ----
+.vscode/
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 操作系统杂项 ----
+*.log
+logs/
+tmp/
+temp/
+
+# ═════════════════════════════════════════════════════════════
+# 数据与媒体（受版权 / 个人隐私保护，禁止提交）
+# 依据 plan.md 第 16 节：不重新分发受版权保护的视频，
+# 不将面部数据用于身份识别。
+# ═════════════════════════════════════════════════════════════
+
+# 原始视频与切片（体积大 + 版权限制）
+data/raw/**/*.mp4
+data/raw/**/*.mkv
+data/raw/**/*.avi
+data/raw/**/*.mov
+data/raw/**/*.ts
+data/clips/**/*.mp4
+data/clips/**/*.mkv
+data/clips/**/*.avi
+data/clips/**/*.mov
+data/clips/**/*.ts
+data/videos/**/*.mp4
+
+# 提取的人脸图像（个人数据 / 伦理限制）
+data/faces/**/*.jpg
+data/faces/**/*.jpeg
+data/faces/**/*.png
+data/faces/**/*.bmp
+data/processed/**/*.jpg
+data/processed/**/*.jpeg
+data/processed/**/*.png
+
+# 外部数据集
+data/external/
+
+# 原始抓取数据（含未脱敏字段）
+data/raw/*.json
+data/raw/*.html
+
+# ─────────────────────────────────────────────────────────────
+# 允许提交的元数据（事件表 / 数据字典 / 排除日志）
+# data/metadata/*.csv  data/metadata/*.json  data/metadata/*.parquet
+# 这些是可公开发布的事件元数据，应纳入版本控制。
+# 如某文件含个人可识别信息，请手动加入下方忽略。
+# ─────────────────────────────────────────────────────────────
+
+# ═════════════════════════════════════════════════════════════
+# 模型权重与产物
+# ═════════════════════════════════════════════════════════════
+
+# 预训练与微调权重
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.h5
+models/pretrained/
+models/finetuned/
+
+# 缓存的 FER embedding / 特征缓存
+features/
+*.npy
+*.npz
+caches/
+.cache/
+
+# 实验产物（指标、图表、报告可单独保留）
+runs/
+mlruns/
+wandb/
+outputs/
+results/raw/
+
+# ─────────────────────────────────────────────────────────────
+# 允许跟踪的结果摘要
+# results/tables/  results/figures/  results/reports/
+# ─────────────────────────────────────────────────────────────
+
+# ---- 密钥 / 配置中的敏感信息 ----
+.env
+.env.local
+secrets.yaml
+secrets.json
+config/local.yaml
+config/local.json
+**/credentials.*
+
+# ---- 数据库 ----
+*.db
+*.sqlite
+*.sqlite3
