@@ -137,12 +137,17 @@ Penalty-shoot-and-Expression/
 ## 快速开始
 
 ```bash
-# 1. 创建环境（Windows + NVIDIA GPU）
+# 本地 Windows 工作机（RTX 4060 Laptop）
 conda create -n penalty-fer python=3.10 -y
 conda activate penalty-fer
 # 先装 CUDA 版 torch，再装其余依赖（顺序很重要，避免被 PyPI CPU 版覆盖）
 pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
 pip install -r requirements.txt
+
+# 训练服务器（Linux, 2×A6000 48GB）：PyPI 的 torch 默认即 CUDA 版，直接
+#   conda create -n penalty-fer python=3.10 -y && conda activate penalty-fer
+#   pip install -r requirements.txt
+# 先用 nvidia-smi 确认驱动 ≥ 550（cu124 要求）；驱动较老则按 requirements.txt 头部注释换 cu121
 
 # 2.（待实现）准备数据元数据
 # python scripts/build_metadata.py --matches data/metadata/matches.csv

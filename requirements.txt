@@ -1,9 +1,16 @@
 # PenalShoot-FER 依赖
-# 安装顺序（Windows + RTX 4060 Laptop, driver CUDA 13.1）：
+# 本地 Windows 工作机（RTX 4060 Laptop）：
 #   conda create -n penalty-fer python=3.10 -y && conda activate penalty-fer
 #   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
 #   pip install -r requirements.txt
-# （torch 先装则 pip 检测到已满足，不会从 PyPI 覆盖成 CPU 版）
+# （Windows 的 PyPI torch 是 CPU 版，必须先单独装 CUDA 版；顺序很重要）
+#
+# 训练服务器（Linux, 2×A6000 48GB）：
+#   conda create -n penalty-fer python=3.10 -y && conda activate penalty-fer
+#   pip install -r requirements.txt
+# （Linux 的 PyPI torch 默认就是 CUDA 版，无需 index-url；先 nvidia-smi 确认驱动 ≥ 550，
+#   驱动较老则改用 cu121：pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121）
+# 同一 cu124 wheel 同时覆盖 4060（Ada, SM8.9）与 A6000（Ampere, SM8.6），两台机共用本清单。
 
 # ---- 深度学习 ----
 torch==2.5.1
