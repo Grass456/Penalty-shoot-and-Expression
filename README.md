@@ -137,9 +137,11 @@ Penalty-shoot-and-Expression/
 ## 快速开始
 
 ```bash
-# 1. 创建环境
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+# 1. 创建环境（Windows + NVIDIA GPU）
+conda create -n penalty-fer python=3.10 -y
+conda activate penalty-fer
+# 先装 CUDA 版 torch，再装其余依赖（顺序很重要，避免被 PyPI CPU 版覆盖）
+pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
 pip install -r requirements.txt
 
 # 2.（待实现）准备数据元数据

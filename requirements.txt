@@ -1,0 +1,26 @@
+# PenalShoot-FER 依赖
+# 安装顺序（Windows + RTX 4060 Laptop, driver CUDA 13.1）：
+#   conda create -n penalty-fer python=3.10 -y && conda activate penalty-fer
+#   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
+#   pip install -r requirements.txt
+# （torch 先装则 pip 检测到已满足，不会从 PyPI 覆盖成 CPU 版）
+
+# ---- 深度学习 ----
+torch==2.5.1
+torchvision==0.20.1
+# emotiefflib[torch] 会自动带上 timm==0.9.*（EmotiEffLib 权重以 timm 0.9.x 序列化，勿升级）
+emotiefflib[torch]>=1.1.1
+
+# ---- 数据 / 评估 / 可视化 ----
+numpy
+pandas
+scikit-learn
+matplotlib
+pyyaml
+tqdm
+pillow
+opencv-python
+
+# ---- notebook ----
+jupyter
+ipykernel
