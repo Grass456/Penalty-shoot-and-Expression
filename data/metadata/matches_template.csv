@@ -1,1 +1,1 @@
-match_id,match_date,competition,competition_category,home_team,away_team,venue,is_neutral_venue,video_source,video_quality,n_raw_penalties,n_valid_faces,n_manual_corrections,processing_time_min,processing_status,notes
+match_id,match_date,competition,home_team,away_team,video_source,video_quality,n_raw_penalties,n_valid_faces,processing_time_min,notes
