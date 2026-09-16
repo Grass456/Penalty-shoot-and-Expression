@@ -1,9 +1,9 @@
 match_id,kick_seq,status,reason,n_candidates,det_rate,selected_frame_idx,face_w_px,conf,crop_path
-m001,k01,selected,,175,0.50,616,232,0.95,data/faces/m001/k01.jpg
-m001,k02,selected,,193,0.35,680,206,0.78,data/faces/m001/k02.jpg
-m001,k03,selected,,201,0.44,814,183,0.91,data/faces/m001/k03.jpg
-m001,k04,selected,,126,0.34,570,88,0.90,data/faces/m001/k04.jpg
-m001,k05,selected,,253,0.46,886,139,0.91,data/faces/m001/k05.jpg
-m001,k06,selected,,323,0.59,922,177,0.92,data/faces/m001/k06.jpg
-m001,k07,selected,,276,0.56,972,178,0.94,data/faces/m001/k07.jpg
-m001,k08,selected,,190,0.34,1018,108,0.87,data/faces/m001/k08.jpg
+m001,k01,selected,,79,0.45,262,176,0.76,data/faces/m001/k01.jpg
+m001,k02,selected,,83,0.47,348,202,0.91,data/faces/m001/k02.jpg
+m001,k03,selected,,100,0.64,224,187,0.91,data/faces/m001/k03.jpg
+m001,k04,selected,,126,0.34,568,88,0.90,data/faces/m001/k04.jpg
+m001,k05,selected,,68,0.39,280,77,0.66,data/faces/m001/k05.jpg
+m001,k06,selected,,89,0.51,212,176,0.92,data/faces/m001/k06.jpg
+m001,k07,selected,,105,0.69,238,174,0.93,data/faces/m001/k07.jpg
+m001,k08,selected,,38,0.23,238,109,0.85,data/faces/m001/k08.jpg
