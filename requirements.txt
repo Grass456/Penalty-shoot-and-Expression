@@ -27,6 +27,9 @@ pyyaml
 tqdm
 pillow
 opencv-python
+requests          # FBref 点球历史抓取（scripts/fbref_pens.py）
+beautifulsoup4    # 同上：解析 HTML 页面（本地存页 + 脚本解析的两段式工作流）
+lxml              # BeautifulSoup 的 HTML 解析后端
 
 # ---- notebook ----
 jupyter
