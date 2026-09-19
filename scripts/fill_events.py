@@ -39,7 +39,7 @@ EVENTS_PATH = PROJECT_ROOT / "data" / "metadata" / "events.csv"
 MATCHES_PATH = PROJECT_ROOT / "data" / "metadata" / "matches.csv"
 
 EVENT_COLUMNS = ["event_id", "match_id", "contact_time_s", "face_closeup_s", "face_path",
-                 "player", "result", "round_number", "kick_order_in_round", "sudden_death",
+                 "result", "round_number", "kick_order_in_round", "sudden_death",
                  "team_score_before", "opponent_score_before", "kicks_taken_before",
                  "history_attempts", "history_goals", "history_missing", "exclusion_reason"]
 
