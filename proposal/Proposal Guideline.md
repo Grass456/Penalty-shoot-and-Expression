@@ -1,0 +1,4 @@
+# Formatting
+the NeurIPS formatting.
+# Detail
+Submit a proposal as a one-page pdf. Provide an outline of your plan for the project and questions you will investigate / analysis you’ll conduct in the course of it. It may help to define a set of hypotheses you will test. An integral aspect of the proposal is to define a project idea that is both realistic and ambitious in scope. Its content can be considered as an extended version of the abstract with more details of introduction, research goals, research methods, research contributions, and expected research outcomes. We recommend that you use the project proposal stage to get feedback from the teaching staff on the project’s feasibility and whether the proposal satisfies the project expectations of the class.

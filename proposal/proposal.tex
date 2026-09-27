@@ -1,0 +1,50 @@
+\documentclass{article}
+
+% natbib options must be set BEFORE loading neurips_2025 (which loads natbib)
+\PassOptionsToPackage{numbers}{natbib}
+
+% Course project proposal: preprint mode (non-anonymous, "work in progress" footer)
+\usepackage[preprint]{Styles/neurips_2025}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\title{Can Pre-trained Facial Expression Representations Predict\\Penalty Shootout Outcomes Beyond Match Context?}
+
+\author{%
+  XunZhi Cai \\
+  \texttt{TODO: department / university / email} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We test whether pre-trained facial expression representations extracted from a single \emph{pre-kick} frame of the kicker's face predict penalty-shootout outcomes (goal vs.\ miss), and whether they add predictive value \emph{beyond} historical penalty performance and match context. Building on a completed 14-match pilot (123 kicks, 114 valid pre-kick faces), we will train FER-only, context-only, and fused models under a leakage-controlled, match-disjoint evaluation protocol, and formulate seven falsifiable hypotheses whose negative outcomes are treated as valid findings.
+\end{abstract}
+
+\section{Introduction and research goal}
+Penalty shootouts concentrate high-stakes decisions into isolated kicks, each typically preceded by a broadcast close-up of the kicker. Pre-trained facial expression recognition (FER) encoders map such faces to emotion probabilities and embeddings~\citep{ekman,emotieff}, but whether they transfer to low-resolution, domain-shifted sports footage---and predict anything beyond context such as score state and shooting order---is unknown. Our goal is a controlled answer: comparing context-only, FER-only, and fused models under a strict anti-leakage protocol.
+
+\section{Hypotheses}
+We test seven falsifiable hypotheses: (H1) FER-only beats the majority-class baseline; (H2) FER embeddings beat 8-dimensional emotion probabilities; (H3) FER-pretrained beats ImageNet-pretrained encoders under matched architectures; (H4) partial fine-tuning of the last encoder block beats a frozen encoder; (H5) context features (history, round, kick order, pre-kick scores, venue) beat the majority baseline; (H6) FER+Context stably beats context-only---the core test; (H7) random event splits overestimate performance relative to match-disjoint splits.
+
+\section{Data and methods}
+Each sample is one shootout kick: a qualified pre-kick face frame (never after ball contact), the outcome label, and context features. Historical performance sums a kicker's league penalties over the three \emph{completed} club seasons strictly preceding the match, excluding temporal leakage by construction. From broadcast video we have completed a 14-match World Cup pilot: 123 kicks, 114 valid faces (93\% retention; 77 goals / 37 misses), every exclusion logged with reasons; context fields are verified by a replay validator, and the end-to-end pipeline (timestamping, anti-leakage face capture, FER feature caching) is operational. We will extend to 60--80 matches if pre-declared feasibility criteria hold. Models: majority, logistic-regression, and MLP context baselines; emotion-probability and ImageNet-embedding classifiers~\citep{effnet}; frozen and fine-tuned FER classifiers; late fusion.
+
+\section{Evaluation and expected outcomes}
+All models share identical match-disjoint 5-fold grouped cross-validation; scalers and encodings are fit on training folds only, and model selection uses validation early stopping only. We report AUROC, AUPRC, balanced accuracy, and Brier score (mean $\pm$ sd over folds and seeds), plus feature-group, pretraining-source, split-type, and face-quality ablations and Grad-CAM diagnostics. Expected contributions: a reusable leakage-controlled pre-kick face and context pipeline; a quantified feasibility study (retention, cost, class balance); and a controlled answer to whether generic FER representations add predictive value beyond context---positive or informative negative. Broadcast video and face images will not be redistributed; no mental-state or causal claims will be made.
+
+\begin{thebibliography}{9}\small
+\bibitem{ekman} P.~Ekman and W.~V. Friesen. Constants across cultures in the face and emotion. \emph{J.~Personality and Social Psychology}, 17(2):124--129, 1971.
+\bibitem{effnet} M.~Tan and Q.~Le. EfficientNet: Rethinking model scaling for convolutional neural networks. In \emph{ICML}, 2019.
+\bibitem{emotieff} A.~Savchenko et al. EmotiEffLib: facial expression recognition library. \url{https://github.com/HSE-asavchenko/face-emotion-recognition}, 2023.
+\end{thebibliography}
+
+\end{document}
