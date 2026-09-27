@@ -1,0 +1,52 @@
+{
+  "checked_at": "2026-09-27T09:37:24",
+  "fer_backbone": {
+    "library": "emotiefflib",
+    "model_name": "enet_b0_8_best_vgaf",
+    "engine": "torch",
+    "backbone_class": "EfficientNet",
+    "img_size": 224,
+    "embedding_dim": 1280,
+    "n_emotion_classes": 8,
+    "emotion_names": [
+      "Anger",
+      "Contempt",
+      "Disgust",
+      "Fear",
+      "Happiness",
+      "Neutral",
+      "Sadness",
+      "Surprise"
+    ],
+    "normalization": {
+      "mean": [
+        0.485,
+        0.456,
+        0.406
+      ],
+      "std": [
+        0.229,
+        0.224,
+        0.225
+      ]
+    }
+  },
+  "imagenet_control": "efficientnet_b0",
+  "probe": {
+    "n_images": 114,
+    "source": "data/faces",
+    "neutral_share": 0.15789473684210525,
+    "mean_max_prob": 0.5411482453346252,
+    "mean_prob_per_emotion": {
+      "Anger": 0.42030999064445496,
+      "Contempt": 0.05317600071430206,
+      "Disgust": 0.05438699945807457,
+      "Fear": 0.032009001821279526,
+      "Happiness": 0.016225000843405724,
+      "Neutral": 0.19499799609184265,
+      "Sadness": 0.1750209927558899,
+      "Surprise": 0.053874000906944275
+    },
+    "valid_for_domain_conclusion": true
+  }
+}
