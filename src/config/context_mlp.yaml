@@ -1,0 +1,24 @@
+# B2 Context MLP 配置（pilot smoke test，plan.md §7.3 / §9）
+
+# 输入特征：与 B1 相同的 6 维 context（run_baselines.CONTEXT_NUMERIC）
+features:
+  context_numeric: [round_number, team_score_before, opponent_score_before,
+                    kicks_taken_before, history_rate, history_missing]
+  beta_alpha: 1.0
+  beta_beta: 1.0
+
+model:
+  hidden: 16        # 低容量（plan §7.3：1-2 隐层 + dropout + weight decay）
+  dropout: 0.3
+
+training:
+  seed: 2026
+  lr: 0.001
+  weight_decay: 0.01
+  max_epochs: 200
+  patience: 30      # early stopping 只看 val AUROC（硬约束 6）
+  batch_size: null  # null = 全批量（每折 train 仅 ~96 行）
+
+paths:
+  folds: folds/match_disjoint.json
+  events: data/metadata/events.csv
