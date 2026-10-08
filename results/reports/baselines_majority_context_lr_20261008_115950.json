@@ -1,0 +1,167 @@
+{
+  "created_at": "2026-10-08T11:59:50",
+  "models": [
+    "majority",
+    "context_lr"
+  ],
+  "seed": 2026,
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "837542d5efb67da2"
+  },
+  "events_fingerprint": "36b3fae69329faf9",
+  "n_valid_events": 114,
+  "context_features": [
+    "round_number",
+    "team_score_before",
+    "opponent_score_before",
+    "kicks_taken_before",
+    "history_rate",
+    "history_missing"
+  ],
+  "beta_smoothing": {
+    "alpha": 1.0,
+    "beta": 1.0
+  },
+  "aggregates": [
+    {
+      "model": "majority",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.6754,
+        "std": 0.0176,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2189,
+        "std": 0.0062,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "majority",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.6705,
+        "std": 0.1427,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2251,
+        "std": 0.052,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "majority",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.6705,
+        "std": 0.1427,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2254,
+        "std": 0.0529,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5736,
+        "std": 0.0194,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7306,
+        "std": 0.0338,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5062,
+        "std": 0.0185,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2152,
+        "std": 0.0069,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5195,
+        "std": 0.1895,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7601,
+        "std": 0.1471,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.4911,
+        "std": 0.0322,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2391,
+        "std": 0.0623,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5733,
+        "std": 0.2034,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7612,
+        "std": 0.1778,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.4827,
+        "std": 0.0433,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2358,
+        "std": 0.066,
+        "n_valid_folds": 14
+      }
+    }
+  ],
+  "per_fold_path": "results/tables/baselines_majority_context_lr_20261008_115950.csv"
+}
