@@ -84,11 +84,29 @@ def build_fer(model_name: str, device: str):
 
 
 def build_imagenet(device: str):
-    """ImageNet 对照臂: timm efficientnet_b0 去分类头，输出与 enet_b0 同为 1280 维。"""
+    """ImageNet 对照臂: timm efficientnet_b0 去分类头，输出与 enet_b0 同为 1280 维。
+
+    本机网络到 HF Hub 不稳定（连 HEAD 元数据都失败），timm>=0.9 默认先走
+    load_state_dict_from_hf（safetensors 路径），不会回落到旧的 .pth 缓存。
+    这里先从 torch.hub 缓存目录找 .pth 权重（用户手动下载放入），找到则
+    跳过 HF 下载路径直接 build + load_state_dict；找不到再退回 timm 默认
+    （联网环境/服务器上仍可用）。
+    """
     import timm
     import torch
 
-    model = timm.create_model(IMAGENET_CONTROL, pretrained=True, num_classes=0)
+    pth = Path(torch.hub.get_dir()) / "checkpoints" / "efficientnet_b0_ra-3dd342df.pth"
+    if pth.exists():
+        model = timm.create_model(IMAGENET_CONTROL, pretrained=False, num_classes=0)
+        sd = torch.load(pth, map_location="cpu")
+        missing, unexpected = model.load_state_dict(sd, strict=False)
+        # num_classes=0 去头后 classifier.* 属预期 unused（原 1000 类头），其余不匹配视为版本问题
+        real_unexpected = [k for k in unexpected if "classifier" not in k]
+        assert not missing and not real_unexpected, \
+            f"权重不匹配: missing={missing[:5]} unexpected={real_unexpected[:5]}"
+        print(f"ImageNet 臂: 从本地缓存加载 {pth.name}（跳过 HF 下载）")
+    else:
+        model = timm.create_model(IMAGENET_CONTROL, pretrained=True, num_classes=0)
     model.eval().to(device)
     return model, None, 1280, 0
 

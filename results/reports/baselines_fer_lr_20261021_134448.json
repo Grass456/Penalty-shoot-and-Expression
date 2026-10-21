@@ -1,0 +1,109 @@
+{
+  "created_at": "2026-10-21T13:44:48",
+  "models": [
+    "fer_lr"
+  ],
+  "seed": 2026,
+  "config": null,
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "837542d5efb67da2"
+  },
+  "events_fingerprint": "36b3fae69329faf9",
+  "n_valid_events": 114,
+  "context_features": [
+    "round_number",
+    "team_score_before",
+    "opponent_score_before",
+    "kicks_taken_before",
+    "history_rate",
+    "history_missing"
+  ],
+  "beta_smoothing": {
+    "alpha": 1.0,
+    "beta": 1.0
+  },
+  "fer_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "n_train~96 vs d=1280，固定强 L2；val 单场不可靠故不做逐折 C 扫描"
+  },
+  "aggregates": [
+    {
+      "model": "fer_lr",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.9976,
+        "std": 0.0058,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.0427,
+        "std": 0.0027,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "fer_lr",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5723,
+        "std": 0.2001,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7853,
+        "std": 0.1761,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5588,
+        "std": 0.1159,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.241,
+        "std": 0.0803,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "fer_lr",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.6019,
+        "std": 0.2042,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.8069,
+        "std": 0.1575,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5394,
+        "std": 0.1256,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2367,
+        "std": 0.0761,
+        "n_valid_folds": 14
+      }
+    }
+  ],
+  "per_fold_path": "results/tables/baselines_fer_lr_20261021_134448.csv"
+}

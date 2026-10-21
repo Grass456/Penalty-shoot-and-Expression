@@ -1,0 +1,487 @@
+{
+  "created_at": "2026-10-21T14:27:32",
+  "models": [
+    "majority",
+    "context_lr",
+    "emotion_lr",
+    "fer_lr",
+    "fused_lr",
+    "imagenet_lr"
+  ],
+  "seed": 2026,
+  "config": null,
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "837542d5efb67da2"
+  },
+  "events_fingerprint": "36b3fae69329faf9",
+  "n_valid_events": 114,
+  "context_features": [
+    "round_number",
+    "team_score_before",
+    "opponent_score_before",
+    "kicks_taken_before",
+    "history_rate",
+    "history_missing"
+  ],
+  "beta_smoothing": {
+    "alpha": 1.0,
+    "beta": 1.0
+  },
+  "fer_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "n_train~96 vs d=1280，固定强 L2；val 单场不可靠故不做逐折 C 扫描"
+  },
+  "fused_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 同一 C 施加于全部 1286 维；M3 判读为同正则强度下融合是否不低于单臂，不做融合超参调优"
+  },
+  "imagenet_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 完全同协议，仅特征来源不同（ImageNet vs FER 预训练）"
+  },
+  "aggregates": [
+    {
+      "model": "majority",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.6754,
+        "std": 0.0176,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2189,
+        "std": 0.0062,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "majority",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.6705,
+        "std": 0.1427,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2251,
+        "std": 0.052,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "majority",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.6705,
+        "std": 0.1427,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2254,
+        "std": 0.0529,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5736,
+        "std": 0.0194,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7306,
+        "std": 0.0338,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5062,
+        "std": 0.0185,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2152,
+        "std": 0.0069,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5195,
+        "std": 0.1895,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7601,
+        "std": 0.1471,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.4911,
+        "std": 0.0322,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2391,
+        "std": 0.0623,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5733,
+        "std": 0.2034,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7612,
+        "std": 0.1778,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.4827,
+        "std": 0.0433,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2358,
+        "std": 0.066,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "emotion_lr",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.6064,
+        "std": 0.0268,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7775,
+        "std": 0.0226,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5158,
+        "std": 0.016,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2092,
+        "std": 0.0065,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "emotion_lr",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.455,
+        "std": 0.2651,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7558,
+        "std": 0.1485,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.4657,
+        "std": 0.0605,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2506,
+        "std": 0.0702,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "emotion_lr",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.4843,
+        "std": 0.2646,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.769,
+        "std": 0.1512,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.4798,
+        "std": 0.0543,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2537,
+        "std": 0.0785,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "fer_lr",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.9976,
+        "std": 0.0058,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.0427,
+        "std": 0.0027,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "fer_lr",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5723,
+        "std": 0.2001,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7853,
+        "std": 0.1761,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5588,
+        "std": 0.1159,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.241,
+        "std": 0.0803,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "fer_lr",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.6019,
+        "std": 0.2042,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.8069,
+        "std": 0.1575,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5394,
+        "std": 0.1256,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2367,
+        "std": 0.0761,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "fused_lr",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.9976,
+        "std": 0.0058,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.0424,
+        "std": 0.0026,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "fused_lr",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5609,
+        "std": 0.1923,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.7834,
+        "std": 0.1738,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5588,
+        "std": 0.1159,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2417,
+        "std": 0.0797,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "fused_lr",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.596,
+        "std": 0.1934,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.8052,
+        "std": 0.1555,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5323,
+        "std": 0.1267,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2376,
+        "std": 0.0752,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "imagenet_lr",
+      "split": "train",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.9988,
+        "std": 0.0044,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.0373,
+        "std": 0.0026,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "imagenet_lr",
+      "split": "val",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.6377,
+        "std": 0.1989,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.8323,
+        "std": 0.1346,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5526,
+        "std": 0.1452,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2551,
+        "std": 0.0838,
+        "n_valid_folds": 14
+      }
+    },
+    {
+      "model": "imagenet_lr",
+      "split": "test",
+      "n_folds": 14,
+      "auroc": {
+        "mean": 0.5883,
+        "std": 0.2237,
+        "n_valid_folds": 14
+      },
+      "auprc": {
+        "mean": 0.8003,
+        "std": 0.129,
+        "n_valid_folds": 14
+      },
+      "balanced_acc": {
+        "mean": 0.5347,
+        "std": 0.1387,
+        "n_valid_folds": 14
+      },
+      "brier": {
+        "mean": 0.2548,
+        "std": 0.0876,
+        "n_valid_folds": 14
+      }
+    }
+  ],
+  "per_fold_path": "results/tables/baselines_majority_context_lr_emotion_lr_fer_lr_fused_lr_imagenet_lr_20261021_142732.csv"
+}

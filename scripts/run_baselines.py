@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-"""Pilot smoke test 基线：Majority (B0)、Context LR (B1)、Context MLP (B2)。
+"""Pilot smoke test 基线：Majority (B0)、Context LR (B1)、Context MLP (B2)、Emotion Prob LR (B3)。
 
 用法（项目根目录）:
     python scripts/run_baselines.py --models majority,context_lr
     python scripts/run_baselines.py --models context_mlp --config src/config/context_mlp.yaml
+    python scripts/run_baselines.py --models emotion_lr
     python scripts/run_baselines.py --validate   # 只检查 folds 与特征缓存，不训练
 
 协议（plan.md §10.1、§22 Action 3）:
@@ -15,6 +16,14 @@
     - B2 Context MLP：同一 6 维输入，低容量 MLP（src/models/context_mlp.py），
       训练走 src/training/train_loop.py（early stopping 只看 val AUROC），
       超参从 src/config/context_mlp.yaml 读；
+    - B3 Emotion Prob LR：8 维情绪概率（FER 缓存 emo_probs）+ 标准化 + LR，
+      回答"情绪概率本身有无预测信号"；
+    - M1 FER embedding LR：1280 维 frozen embedding + 强 L2 LR（C=0.01 固定，
+      理由见 run_fer_lr docstring），回答 H1（FER 表征有无额外信号）；
+    - M3 Fused LR：context 6 维 + FER embedding 拼接（1286 维），同一 C=0.01，
+      回答 H3（context 之外 FER 有无融合增益）；
+    - B4 ImageNet LR：efficientnet_b0 frozen embedding 对照臂，与 M1 同协议，
+      M1-B4 之差 = 情绪域预训练增益（H1 判据）；
     - 指标：AUROC / AUPRC / Balanced Acc / Brier（硬约束 7），逐折 + 聚合；
     - 结果落盘 results/tables/ 与 results/reports/，报告里记录配置与数据指纹。
 
@@ -51,6 +60,11 @@ REPORTS_DIR = PROJECT_ROOT / "results" / "reports"
 # Beta 平滑历史率（plan.md §6.6.1；pilot 固定值，正式阶段由训练集确定——
 # 当前两个基线对 α/β 不敏感到需要调参的程度，先显式固定并记录在报告里）
 BETA_ALPHA, BETA_BETA = 1.0, 1.0
+
+FER_CACHE = PROJECT_ROOT / "features" / "fer" / "enet_b0_8_best_vgaf" / "embeddings.npz"
+IMAGENET_CACHE = PROJECT_ROOT / "features" / "fer" / "imagenet_b0" / "embeddings.npz"
+# 情绪类别顺序 = cache_fer_features.py 写入顺序（8 类，argmax/审计用同一顺序）
+EMO_CLASSES = ["Anger", "Contempt", "Disgust", "Fear", "Happiness", "Neutral", "Sadness", "Surprise"]
 
 CONTEXT_NUMERIC = ["round_number", "team_score_before", "opponent_score_before",
                    "kicks_taken_before", "history_rate", "history_missing"]
@@ -165,6 +179,154 @@ def run_context_mlp(folds: list[dict], ev: pd.DataFrame, cfg: dict, seed: int) -
     return rows
 
 
+def load_fer_cache(cache_path: Path = FER_CACHE) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """读 FER/ImageNet 特征缓存，返回 (emo_probs_df, embedding_df)，index=event_id。
+
+    缓存的 event_ids 生成口径与 load_valid_events 一致，但仍按 event_id 对齐
+    （而非位置拼接），events.csv 变动后能立刻暴露不一致而不是静默错位。
+    """
+    if not cache_path.exists():
+        raise FileNotFoundError(f"缺特征缓存: {cache_path}（先跑 scripts/cache_fer_features.py）")
+    cache = np.load(cache_path, allow_pickle=True)
+    ids = cache["event_ids"].astype(str)
+    probs = cache["emo_probs"]
+    emo = (pd.DataFrame(probs, columns=EMO_CLASSES, index=ids)
+           if probs.shape[1] == len(EMO_CLASSES) else pd.DataFrame(index=ids))  # ImageNet 臂无情绪头
+    emb = pd.DataFrame(cache["embedding"], columns=[f"emb_{j:04d}" for j in range(cache["embedding"].shape[1])], index=ids)
+    return emo, emb
+
+
+def run_emotion_lr(folds: list[dict], ev: pd.DataFrame, seed: int) -> list[dict]:
+    """B3：8 维情绪概率 + LR，协议与 B1 完全一致（标准化只来自 train，硬约束 5）。
+
+    emo_probs 已在 [0,1] 且行和为 1，标准化主要为与 B1 协议一致（多组 LR 之间
+    的 C 语义可比），对 LR 本身影响很小。
+    """
+    emo, _ = load_fer_cache()
+    missing = set(ev["event_id"]) - set(emo.index)
+    if missing:
+        raise ValueError(f"{len(missing)} 个有效样本不在特征缓存中（events.csv 是否已变更？需重跑 cache_fer_features.py）: {sorted(missing)[:5]}...")
+    y_all = (ev.set_index("event_id")["result"] == "goal").astype(int)
+    rows = []
+    for fold in folds:
+        Xtr = emo.loc[fold["train_event_ids"]]
+        ytr = y_all.loc[fold["train_event_ids"]].values
+        mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
+        lr = LogisticRegression(max_iter=1000, C=1.0, random_state=seed)
+        lr.fit((Xtr - mu) / sd, ytr)
+        for split in ("train", "val", "test"):
+            Xs = (emo.loc[fold[f"{split}_event_ids"]] - mu) / sd
+            p = lr.predict_proba(Xs)[:, 1]
+            m = metrics(y_all.loc[fold[f"{split}_event_ids"]].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "emotion_lr", "split": split,
+                         **m, "coef": dict(zip(EMO_CLASSES, np.round(lr.coef_[0], 4).tolist())),
+                         "intercept": round(float(lr.intercept_[0]), 4)})
+    return rows
+
+
+def run_fer_lr(folds: list[dict], ev: pd.DataFrame, seed: int) -> list[dict]:
+    """M1：1280 维 frozen FER embedding + 强 L2 LR（核心臂，回答 H1）。
+
+    正则策略（选定理由）：n_train≈96 vs d=1280，过拟合是唯一风险，而 val=单场
+    （6-10 样本）已被 B2 证明不可靠（7/14 折 best_epoch=1）——所以不做逐折
+    C 扫描（等于在噪声上调参），而是固定强 L2：C=0.01（比 B1/B3 的 C=1.0 强
+    两个数量级），等价于先验收缩到零附近，让 LR 近似 ridge 回归。确定性、
+    无 val 依赖、跨折可比。PCA 降维备选未采用：主成分方向无监督，可能丢掉
+    与结果对齐的低方差方向，且引入"保留多少维"这个同样只能拍脑袋的超参。
+
+    逐折表不记录 1280 维系数（CSV 过大），只记 ||coef||_2 与 top-10 |coef| 维度名。
+    """
+    _, emb = load_fer_cache()
+    missing = set(ev["event_id"]) - set(emb.index)
+    if missing:
+        raise ValueError(f"{len(missing)} 个有效样本不在特征缓存中（events.csv 是否已变更？需重跑 cache_fer_features.py）: {sorted(missing)[:5]}...")
+    y_all = (ev.set_index("event_id")["result"] == "goal").astype(int)
+    rows = []
+    for fold in folds:
+        Xtr = emb.loc[fold["train_event_ids"]]
+        ytr = y_all.loc[fold["train_event_ids"]].values
+        mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)  # 标准化器只来自 train
+        lr = LogisticRegression(max_iter=5000, C=0.01, random_state=seed)
+        lr.fit((Xtr - mu) / sd, ytr)
+        coef = lr.coef_[0]
+        top10 = sorted(emb.columns, key=lambda c: abs(coef[emb.columns.get_loc(c)]), reverse=True)[:10]
+        for split in ("train", "val", "test"):
+            Xs = (emb.loc[fold[f"{split}_event_ids"]] - mu) / sd
+            p = lr.predict_proba(Xs)[:, 1]
+            m = metrics(y_all.loc[fold[f"{split}_event_ids"]].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "fer_lr", "split": split,
+                         **m, "coef_l2": round(float(np.linalg.norm(coef)), 4),
+                         "top10_abs_coef": top10})
+    return rows
+
+
+def run_fused_lr(folds: list[dict], ev: pd.DataFrame, seed: int) -> list[dict]:
+    """M3：context 6 维 + FER embedding 1280 维拼接 + 强 L2 LR（回答 H3 融合增益）。
+
+    正则策略：与 M1 相同的固定 C=0.01（单一 C 施加于全部 1286 维）。拼接维度下
+    context 特征会被同样的强收缩压制——这是有意的保守选择：M3 的判读是
+    "在同等正则强度下融合是否仍不低于 M1/B1"，而不是"调出最优融合超参"。
+    若 M3 test 低于 M1，pilot 阶段不改协议（硬约束：不追求提升而调协议），
+    扩数据后再议。标准化只来自 train（硬约束 5）。
+
+    逐折表记录 coef_l2 与 top-10 |coef| 维度名（可看出 context 是否进入 top10）。
+    """
+    _, emb = load_fer_cache()
+    missing = set(ev["event_id"]) - set(emb.index)
+    if missing:
+        raise ValueError(f"{len(missing)} 个有效样本不在特征缓存中（events.csv 是否已变更？需重跑 cache_fer_features.py）: {sorted(missing)[:5]}...")
+    ctx = build_context_matrix(ev)
+    assert list(ctx.columns) == CONTEXT_NUMERIC
+    X_all = pd.concat([ctx, emb], axis=1)
+    assert list(X_all.columns) == CONTEXT_NUMERIC + list(emb.columns)  # 列对齐防拼接错位
+    y_all = (ev.set_index("event_id")["result"] == "goal").astype(int)
+    rows = []
+    for fold in folds:
+        Xtr = X_all.loc[fold["train_event_ids"]]
+        ytr = y_all.loc[fold["train_event_ids"]].values
+        mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
+        lr = LogisticRegression(max_iter=5000, C=0.01, random_state=seed)
+        lr.fit((Xtr - mu) / sd, ytr)
+        coef = lr.coef_[0]
+        top10 = sorted(X_all.columns, key=lambda c: abs(coef[X_all.columns.get_loc(c)]), reverse=True)[:10]
+        for split in ("train", "val", "test"):
+            Xs = (X_all.loc[fold[f"{split}_event_ids"]] - mu) / sd
+            p = lr.predict_proba(Xs)[:, 1]
+            m = metrics(y_all.loc[fold[f"{split}_event_ids"]].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "fused_lr", "split": split,
+                         **m, "coef_l2": round(float(np.linalg.norm(coef)), 4),
+                         "top10_abs_coef": top10})
+    return rows
+
+
+def run_imagenet_lr(folds: list[dict], ev: pd.DataFrame, seed: int) -> list[dict]:
+    """B4：ImageNet 对照臂（efficientnet_b0 frozen embedding，1280 维）+ 与 M1
+    完全相同的协议（C=0.01 强 L2）。M1 vs B4 之差 = FER 情绪域预训练的增益（H1 判据）。
+    """
+    _, emb = load_fer_cache(IMAGENET_CACHE)
+    missing = set(ev["event_id"]) - set(emb.index)
+    if missing:
+        raise ValueError(f"{len(missing)} 个有效样本不在 ImageNet 缓存中（需重跑 cache_fer_features.py --imagenet）: {sorted(missing)[:5]}...")
+    y_all = (ev.set_index("event_id")["result"] == "goal").astype(int)
+    rows = []
+    for fold in folds:
+        Xtr = emb.loc[fold["train_event_ids"]]
+        ytr = y_all.loc[fold["train_event_ids"]].values
+        mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
+        lr = LogisticRegression(max_iter=5000, C=0.01, random_state=seed)
+        lr.fit((Xtr - mu) / sd, ytr)
+        coef = lr.coef_[0]
+        top10 = sorted(emb.columns, key=lambda c: abs(coef[emb.columns.get_loc(c)]), reverse=True)[:10]
+        for split in ("train", "val", "test"):
+            Xs = (emb.loc[fold[f"{split}_event_ids"]] - mu) / sd
+            p = lr.predict_proba(Xs)[:, 1]
+            m = metrics(y_all.loc[fold[f"{split}_event_ids"]].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "imagenet_lr", "split": split,
+                         **m, "coef_l2": round(float(np.linalg.norm(coef)), 4),
+                         "top10_abs_coef": top10})
+    return rows
+
+
 def aggregate(rows: list[dict], model: str, split: str = "test") -> dict:
     """test 折聚合：均值 ± 标准差（AUROC 等逐折值）。"""
     sub = [r for r in rows if r["model"] == model and r["split"] == split]
@@ -183,7 +345,7 @@ def save_outputs(all_rows: list[dict], models: list[str], seed: int,
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     tag = "_".join(models)
 
-    per_fold = pd.DataFrame([{k: v for k, v in r.items() if k not in ("coef", "intercept")}
+    per_fold = pd.DataFrame([{k: v for k, v in r.items() if k not in ("coef", "intercept", "top10_abs_coef")}
                              for r in all_rows])
     table_path = TABLES_DIR / f"baselines_{tag}_{stamp}.csv"
     per_fold.to_csv(table_path, index=False)
@@ -203,6 +365,12 @@ def save_outputs(all_rows: list[dict], models: list[str], seed: int,
         "n_valid_events": int(len(ev)),
         "context_features": CONTEXT_NUMERIC,
         "beta_smoothing": {"alpha": BETA_ALPHA, "beta": BETA_BETA},
+        "fer_lr": {"C": 0.01, "max_iter": 5000,
+                   "rationale": "n_train~96 vs d=1280，固定强 L2；val 单场不可靠故不做逐折 C 扫描"},
+        "fused_lr": {"C": 0.01, "max_iter": 5000,
+                     "rationale": "与 M1 同一 C 施加于全部 1286 维；M3 判读为同正则强度下融合是否不低于单臂，不做融合超参调优"},
+        "imagenet_lr": {"C": 0.01, "max_iter": 5000,
+                        "rationale": "与 M1 完全同协议，仅特征来源不同（ImageNet vs FER 预训练）"},
         "aggregates": agg,
         "per_fold_path": table_path.relative_to(PROJECT_ROOT).as_posix(),
     }
@@ -215,7 +383,7 @@ def save_outputs(all_rows: list[dict], models: list[str], seed: int,
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--models", default="majority,context_lr",
-                    help="逗号分隔: majority,context_lr,context_mlp（默认前两个）")
+                    help="逗号分隔: majority,context_lr,context_mlp,emotion_lr,fer_lr,fused_lr,imagenet_lr（默认前两个）")
     ap.add_argument("--config", default="src/config/context_mlp.yaml",
                     help="context_mlp 的超参配置（plan §8：配置驱动）")
     ap.add_argument("--seed", type=int, default=2026, help="随机种子（LR/lbfgs 几乎无随机性，仅为可复现记录）")
@@ -240,9 +408,9 @@ def main() -> int:
         return 0
 
     models = [m.strip() for m in args.models.split(",") if m.strip()]
-    unknown = set(models) - {"majority", "context_lr", "context_mlp"}
+    unknown = set(models) - {"majority", "context_lr", "context_mlp", "emotion_lr", "fer_lr", "fused_lr", "imagenet_lr"}
     if unknown:
-        print(f"未知模型: {sorted(unknown)}（可用: majority, context_lr, context_mlp）", file=sys.stderr)
+        print(f"未知模型: {sorted(unknown)}（可用: majority, context_lr, context_mlp, emotion_lr, fer_lr, fused_lr, imagenet_lr）", file=sys.stderr)
         return 1
 
     cfg = None
@@ -261,6 +429,14 @@ def main() -> int:
         all_rows += run_context_lr(folds, ev, args.seed)
     if "context_mlp" in models:
         all_rows += run_context_mlp(folds, ev, cfg, args.seed)
+    if "emotion_lr" in models:
+        all_rows += run_emotion_lr(folds, ev, args.seed)
+    if "fer_lr" in models:
+        all_rows += run_fer_lr(folds, ev, args.seed)
+    if "fused_lr" in models:
+        all_rows += run_fused_lr(folds, ev, args.seed)
+    if "imagenet_lr" in models:
+        all_rows += run_imagenet_lr(folds, ev, args.seed)
     if not all_rows:
         print("没有可运行的模型", file=sys.stderr)
         return 1
