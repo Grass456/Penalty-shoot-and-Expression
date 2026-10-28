@@ -8,12 +8,12 @@
 
 对每个 data/metadata/kick_markers/<match_id>_markers.csv:
   - events.csv 中已有该场踢 -> 跳过已有 kick_seq，只追加缺失的行；
-    若某踢 event_id 已存在但时间不一致则报错（markers 被改动，人工处理）
-  - 该场无任何行 -> 全部追加
+    若某踢 event_id 已存在但时间不一致则报错（markers 被改动，人工处理）；
+    已有行 face_path 为空时按 data/faces/<match_id>/<kick_seq>.jpg 回填
+  - 该场无任何行 -> 全部追加（face_path 同规则填充）
 
-追加行的 event_id 为 <match_id>-<kick_seq 小写>（如 m015-k01），只填
-match_id / contact_time_s / face_closeup_s，其余字段（result、推导列、
-history_*、exclusion_reason）留空，交给 fill_events.py 与人工填写。
+face_path 按仓库惯例推导并在文件缺失时警告（不阻塞）：截图流程完成前
+路径可能暂不存在，补齐截图后重跑本脚本校验即可。
 不触碰 events.csv 中已存在且 marker 里没有的行（如被排除的踢）。
 """
 
@@ -80,15 +80,24 @@ def new_row(match_id: str, m: dict) -> dict:
         "match_id": match_id,
         "contact_time_s": m["contact_time_s"],
         "face_closeup_s": m["face_closeup_s"],
+        "face_path": face_path_for(match_id, m["kick_seq"]),
     }
+
+
+def face_path_for(match_id: str, kick_seq: str) -> str:
+    """按仓库惯例推导 face_path（相对项目根），文件暂缺也先填路径。"""
+    return f"data/faces/{match_id}/{kick_seq.lower()}.jpg"
 
 
 def sync_match(match_id: str, markers: list[dict], existing: dict[str, dict],
                match_rows: list[dict], dry_run: bool) -> int:
-    """为一场同步 markers -> events。返回追加行数，冲突时退出。"""
-    added = 0
+    """为一场同步 markers -> events。返回改动行数，冲突时退出。"""
+    changed = 0
     for m in markers:
         eid = f"{match_id}-{m['kick_seq'].lower()}"
+        fp = face_path_for(match_id, m["kick_seq"])
+        if not (PROJECT_ROOT / fp).exists():
+            print(f"  !! {eid}: 人脸文件不存在 {fp}（截图未完成？路径仍会填入）", file=sys.stderr)
         if eid in existing:
             row = existing[eid]
             if not same_time(row["contact_time_s"], m["contact_time_s"]):
@@ -97,14 +106,20 @@ def sync_match(match_id: str, markers: list[dict], existing: dict[str, dict],
                 raise SystemExit(1)
             if row["face_closeup_s"] and not same_time(row["face_closeup_s"], m["face_closeup_s"]):
                 print(f"  !! {match_id} {eid}: face_closeup 不一致，跳过不改", file=sys.stderr)
+            if not row["face_path"]:
+                if dry_run:
+                    print(f"  ~ {eid}: face_path 将填 {fp}")
+                else:
+                    row["face_path"] = fp
+                changed += 1
             continue
         if dry_run:
-            print(f"  + {eid} @ {m['contact_time_s']}s (face @ {m['face_closeup_s']}s)")
+            print(f"  + {eid} @ {m['contact_time_s']}s (face @ {m['face_closeup_s']}s, {fp})")
         else:
             match_rows.append(new_row(match_id, m))
             existing[eid] = match_rows[-1]
-        added += 1
-    return added
+        changed += 1
+    return changed
 
 
 def main() -> int:
@@ -129,20 +144,20 @@ def main() -> int:
     for r in rows:
         by_match.setdefault(r["match_id"], []).append(r)
 
-    total_added = 0
+    total_changed = 0
     for path in marker_files:
         match_id = path.name.removesuffix("_markers.csv")
         markers = load_markers(match_id)
-        added = sync_match(match_id, markers, by_event_id, by_match.setdefault(match_id, []), args.dry_run)
-        total_added += added
-        if added and not args.dry_run:
+        changed = sync_match(match_id, markers, by_event_id, by_match.setdefault(match_id, []), args.dry_run)
+        total_changed += changed
+        if changed and not args.dry_run:
             by_match[match_id].sort(key=lambda r: r["event_id"])  # 保持 event_id 排序
-        print(f"{match_id}: markers {len(markers)} 踢, {'将' if args.dry_run else ''}追加 {added}")
+        print(f"{match_id}: markers {len(markers)} 踢, {'将' if args.dry_run else ''}改动 {changed}")
 
     if args.dry_run:
-        print(f"\n--dry-run：未修改文件，共 {total_added} 行待追加")
+        print(f"\n--dry-run：未修改文件，共 {total_changed} 行待改动")
         return 0
-    if total_added == 0:
+    if total_changed == 0:
         print("events.csv 已同步，无需改动")
         return 0
 
@@ -154,9 +169,8 @@ def main() -> int:
         w.writeheader()
         w.writerows(all_rows)
     tmp.replace(EVENTS_PATH)
-    print(f"\n已写回 {EVENTS_PATH.relative_to(PROJECT_ROOT)}（追加 {total_added} 行）")
-    print("提醒: 新行其余字段留空，请先运行 fill_events.py 填 result 与推导列，"
-          "再人工填 history_* 与 face_path")
+    print(f"\n已写回 {EVENTS_PATH.relative_to(PROJECT_ROOT)}（改动 {total_changed} 行）")
+    print("提醒: 新行 result/推导列留空，请运行 fill_events.py 填写；history_* 仍需人工调查后填写")
     return 0
 
 
