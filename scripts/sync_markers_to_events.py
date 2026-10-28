@@ -12,8 +12,11 @@
     已有行 face_path 为空时按 data/faces/<match_id>/<kick_seq>.jpg 回填
   - 该场无任何行 -> 全部追加（face_path 同规则填充）
 
-face_path 按仓库惯例推导并在文件缺失时警告（不阻塞）：截图流程完成前
-路径可能暂不存在，补齐截图后重跑本脚本校验即可。
+face_path 按仓库惯例推导，每次运行都检查文件是否真实存在：
+  - 存在  -> 填 face_path；若 exclusion_reason 是本脚本写的 no_face 则清除
+  - 缺失  -> face_path 置空，exclusion_reason 写 no_face
+            （exclusion_reason 已有其他值时不覆盖，人工填的不动）
+截图补齐后重跑本脚本即可自动回填并清除 no_face。
 不触碰 events.csv 中已存在且 marker 里没有的行（如被排除的踢）。
 """
 
@@ -74,14 +77,19 @@ def same_time(a: str, b: str) -> bool:
         return a == b  # 非数值则按字面比较
 
 
-def new_row(match_id: str, m: dict) -> dict:
-    return {c: "" for c in EVENT_COLUMNS} | {
+def new_row(match_id: str, m: dict, has_face: bool) -> dict:
+    """ 新行：人脸文件存在则填 face_path，否则 exclusion_reason=no_face。"""
+    row = {c: "" for c in EVENT_COLUMNS} | {
         "event_id": f"{match_id}-{m['kick_seq'].lower()}",
         "match_id": match_id,
         "contact_time_s": m["contact_time_s"],
         "face_closeup_s": m["face_closeup_s"],
-        "face_path": face_path_for(match_id, m["kick_seq"]),
     }
+    if has_face:
+        row["face_path"] = face_path_for(match_id, m["kick_seq"])
+    else:
+        row["exclusion_reason"] = "no_face"
+    return row
 
 
 def face_path_for(match_id: str, kick_seq: str) -> str:
@@ -91,13 +99,17 @@ def face_path_for(match_id: str, kick_seq: str) -> str:
 
 def sync_match(match_id: str, markers: list[dict], existing: dict[str, dict],
                match_rows: list[dict], dry_run: bool) -> int:
-    """为一场同步 markers -> events。返回改动行数，冲突时退出。"""
+    """为一场同步 markers -> events。返回改动行数，冲突时退出。
+
+    每次运行都检查人脸文件是否存在：缺失则 face_path 置空并在
+    exclusion_reason 写 no_face（不覆盖已有排除原因）；文件存在则清除
+    本脚本此前写入的 no_face（人工填的排除原因不动），并填 face_path。
+    """
     changed = 0
     for m in markers:
         eid = f"{match_id}-{m['kick_seq'].lower()}"
         fp = face_path_for(match_id, m["kick_seq"])
-        if not (PROJECT_ROOT / fp).exists():
-            print(f"  !! {eid}: 人脸文件不存在 {fp}（截图未完成？路径仍会填入）", file=sys.stderr)
+        has_face = (PROJECT_ROOT / fp).exists()
         if eid in existing:
             row = existing[eid]
             if not same_time(row["contact_time_s"], m["contact_time_s"]):
@@ -106,17 +118,26 @@ def sync_match(match_id: str, markers: list[dict], existing: dict[str, dict],
                 raise SystemExit(1)
             if row["face_closeup_s"] and not same_time(row["face_closeup_s"], m["face_closeup_s"]):
                 print(f"  !! {match_id} {eid}: face_closeup 不一致，跳过不改", file=sys.stderr)
-            if not row["face_path"]:
-                if dry_run:
-                    print(f"  ~ {eid}: face_path 将填 {fp}")
-                else:
-                    row["face_path"] = fp
+            before = (row["face_path"], row["exclusion_reason"])
+            if has_face:
+                row["face_path"] = fp
+                if row["exclusion_reason"] == "no_face":
+                    row["exclusion_reason"] = ""
+            else:
+                row["face_path"] = ""
+                if not row["exclusion_reason"]:
+                    row["exclusion_reason"] = "no_face"
+            if (row["face_path"], row["exclusion_reason"]) != before:
                 changed += 1
+                status = "有" if has_face else "无"
+                print(f"  ~ {eid}: 人脸{status} -> face_path={'填' if has_face else '空'}, "
+                      f"exclusion={row['exclusion_reason'] or '（无）'}")
             continue
         if dry_run:
-            print(f"  + {eid} @ {m['contact_time_s']}s (face @ {m['face_closeup_s']}s, {fp})")
+            print(f"  + {eid} @ {m['contact_time_s']}s (face @ {m['face_closeup_s']}s, "
+                  f"{'有' if has_face else 'no_face'})")
         else:
-            match_rows.append(new_row(match_id, m))
+            match_rows.append(new_row(match_id, m, has_face))
             existing[eid] = match_rows[-1]
         changed += 1
     return changed
