@@ -1,0 +1,33 @@
+# Context 特征 v2 配置（40 场重跑后的重构版，v1 见 context_mlp.yaml）
+
+# 重构依据（2026-10-30 诊断，n=385）:
+#   - round_number 与 sudden_death 信息完全重合（round>=6 ⟺ sudden_death=1）→ 只留机制量；
+#   - team/opponent_score 单列无信号且 score_diff 非单调 → 改为 is_trailing + 截断 score_diff；
+#   - kicks_taken_before 与 round/SD 共线 → 移除；
+#   - history_attempts 中位数=0（>50% 罚球者无历史），原始 β 平滑 rate 多为纯先验 →
+#     收缩目标改训练集基率 p̄（而非 0.5），α 加大到 5，并加 has_history 指示位；
+#   - history_missing=1 仅 3 行（m009 的全部 miss 在其中）→ 不排除样本，
+#     与 attempts=0 同构处理：history_rate 填 p̄，has_history=0。
+
+features:
+  context_v2: [sudden_death, is_trailing, kick_order_second, score_diff,
+               has_history, history_rate]
+  # history_rate 自适应收缩: rate = (history_goals + alpha * p_bar) / (history_attempts + alpha)
+  # alpha 与 p_bar 只由各折训练集估计（硬约束 5），p_bar = train goal 率
+  history_alpha: 5.0
+  score_diff_clip: 2   # |score_diff| 截断界（±2 以外样本 <40）
+
+model:
+  hidden: 16
+  dropout: 0.3
+  grouped:          # context_mlp_v2_grouped 专用：情景组(4维)/历史组(2维)各自隐层
+    hidden_situ: 2
+    hidden_hist: 1
+
+training:
+  seed: 2026
+  lr: 0.001
+  weight_decay: 0.01
+  max_epochs: 200
+  patience: 30
+  batch_size: null

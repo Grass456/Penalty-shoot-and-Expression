@@ -1,0 +1,592 @@
+{
+  "created_at": "2026-10-30T14:24:49",
+  "models": [
+    "majority",
+    "context_lr",
+    "context_mlp",
+    "emotion_lr",
+    "fer_lr",
+    "fused_lr",
+    "imagenet_lr"
+  ],
+  "seed": 2026,
+  "config": {
+    "features": {
+      "context_numeric": [
+        "round_number",
+        "team_score_before",
+        "opponent_score_before",
+        "kicks_taken_before",
+        "history_rate",
+        "history_missing"
+      ],
+      "beta_alpha": 1.0,
+      "beta_beta": 1.0
+    },
+    "model": {
+      "hidden": 16,
+      "dropout": 0.3
+    },
+    "training": {
+      "seed": 2026,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "max_epochs": 200,
+      "patience": 30,
+      "batch_size": null
+    },
+    "paths": {
+      "folds": "folds/match_disjoint.json",
+      "events": "data/metadata/events.csv"
+    }
+  },
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "1d4a2239a85cfbd9"
+  },
+  "events_fingerprint": "07d41a0c661e176f",
+  "n_valid_events": 385,
+  "context_features": [
+    "round_number",
+    "team_score_before",
+    "opponent_score_before",
+    "kicks_taken_before",
+    "history_rate",
+    "history_missing"
+  ],
+  "beta_smoothing": {
+    "alpha": 1.0,
+    "beta": 1.0
+  },
+  "fer_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "n_train~96 vs d=1280，固定强 L2；val 单场不可靠故不做逐折 C 扫描"
+  },
+  "fused_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 同一 C 施加于全部 1286 维；M3 判读为同正则强度下融合是否不低于单臂，不做融合超参调优"
+  },
+  "imagenet_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 完全同协议，仅特征来源不同（ImageNet vs FER 预训练）"
+  },
+  "aggregates": [
+    {
+      "model": "majority",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.722,
+        "std": 0.0068,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2007,
+        "std": 0.003,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "majority",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7059,
+        "std": 0.154,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2095,
+        "std": 0.0689,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "majority",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7059,
+        "std": 0.154,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": null,
+      "brier": {
+        "mean": 0.2095,
+        "std": 0.0692,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5344,
+        "std": 0.0081,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7517,
+        "std": 0.0104,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0003,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2,
+        "std": 0.0031,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.2916,
+        "std": 0.2342,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.6826,
+        "std": 0.1665,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2129,
+        "std": 0.0694,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_lr",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.3154,
+        "std": 0.2174,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.6873,
+        "std": 0.1651,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4975,
+        "std": 0.0156,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2124,
+        "std": 0.0708,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_mlp",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5123,
+        "std": 0.0314,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.736,
+        "std": 0.0201,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5011,
+        "std": 0.0124,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2387,
+        "std": 0.023,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_mlp",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5093,
+        "std": 0.2766,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7848,
+        "std": 0.1317,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5056,
+        "std": 0.1192,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2431,
+        "std": 0.0342,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_mlp",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.4537,
+        "std": 0.2086,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7563,
+        "std": 0.1532,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5282,
+        "std": 0.0991,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2439,
+        "std": 0.0317,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "emotion_lr",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5693,
+        "std": 0.0092,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7719,
+        "std": 0.0087,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5047,
+        "std": 0.0043,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.1975,
+        "std": 0.0031,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "emotion_lr",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.498,
+        "std": 0.234,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7934,
+        "std": 0.1305,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4987,
+        "std": 0.0078,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2128,
+        "std": 0.0705,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "emotion_lr",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5091,
+        "std": 0.2386,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7925,
+        "std": 0.139,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4987,
+        "std": 0.0078,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2128,
+        "std": 0.0714,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "fer_lr",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.9938,
+        "std": 0.0013,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.9976,
+        "std": 0.0005,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.8769,
+        "std": 0.0128,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.0753,
+        "std": 0.0019,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "fer_lr",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.4811,
+        "std": 0.2569,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7689,
+        "std": 0.1501,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4678,
+        "std": 0.1071,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2541,
+        "std": 0.0855,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "fer_lr",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.4754,
+        "std": 0.2656,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7566,
+        "std": 0.1545,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4922,
+        "std": 0.1297,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2556,
+        "std": 0.0877,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "fused_lr",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.9941,
+        "std": 0.0013,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.9977,
+        "std": 0.0005,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.8789,
+        "std": 0.0118,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.075,
+        "std": 0.0019,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "fused_lr",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.4719,
+        "std": 0.251,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7676,
+        "std": 0.1486,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4727,
+        "std": 0.1102,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.255,
+        "std": 0.0854,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "fused_lr",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.469,
+        "std": 0.2633,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7553,
+        "std": 0.1555,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4889,
+        "std": 0.1285,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2569,
+        "std": 0.0878,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "imagenet_lr",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.9994,
+        "std": 0.0003,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.9998,
+        "std": 0.0001,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.9216,
+        "std": 0.0082,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.0603,
+        "std": 0.0015,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "imagenet_lr",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.4596,
+        "std": 0.274,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7492,
+        "std": 0.1723,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4991,
+        "std": 0.1344,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2592,
+        "std": 0.1047,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "imagenet_lr",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.4711,
+        "std": 0.2955,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7592,
+        "std": 0.1815,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4817,
+        "std": 0.1073,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2608,
+        "std": 0.1062,
+        "n_valid_folds": 40
+      }
+    }
+  ],
+  "per_fold_path": "results/tables/baselines_majority_context_lr_context_mlp_emotion_lr_fer_lr_fused_lr_imagenet_lr_20261030_142449.csv"
+}

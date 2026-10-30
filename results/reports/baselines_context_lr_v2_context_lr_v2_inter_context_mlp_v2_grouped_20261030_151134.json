@@ -1,0 +1,300 @@
+{
+  "created_at": "2026-10-30T15:11:34",
+  "models": [
+    "context_lr_v2",
+    "context_lr_v2_inter",
+    "context_mlp_v2_grouped"
+  ],
+  "seed": 2026,
+  "config": {
+    "features": {
+      "context_v2": [
+        "sudden_death",
+        "is_trailing",
+        "kick_order_second",
+        "score_diff",
+        "has_history",
+        "history_rate"
+      ],
+      "history_alpha": 5.0,
+      "score_diff_clip": 2
+    },
+    "model": {
+      "hidden": 16,
+      "dropout": 0.3,
+      "grouped": {
+        "hidden_situ": 2,
+        "hidden_hist": 1
+      }
+    },
+    "training": {
+      "seed": 2026,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "max_epochs": 200,
+      "patience": 30,
+      "batch_size": null
+    }
+  },
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "1d4a2239a85cfbd9"
+  },
+  "events_fingerprint": "07d41a0c661e176f",
+  "n_valid_events": 385,
+  "context_features": [
+    "round_number",
+    "team_score_before",
+    "opponent_score_before",
+    "kicks_taken_before",
+    "history_rate",
+    "history_missing"
+  ],
+  "beta_smoothing": {
+    "alpha": 1.0,
+    "beta": 1.0
+  },
+  "fer_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "n_train~96 vs d=1280，固定强 L2；val 单场不可靠故不做逐折 C 扫描"
+  },
+  "fused_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 同一 C 施加于全部 1286 维；M3 判读为同正则强度下融合是否不低于单臂，不做融合超参调优"
+  },
+  "imagenet_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 完全同协议，仅特征来源不同（ImageNet vs FER 预训练）"
+  },
+  "aggregates": [
+    {
+      "model": "context_lr_v2",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.6079,
+        "std": 0.0069,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7847,
+        "std": 0.0076,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.1953,
+        "std": 0.0031,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_lr_v2",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5825,
+        "std": 0.2469,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7905,
+        "std": 0.1787,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2093,
+        "std": 0.0721,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_lr_v2",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5765,
+        "std": 0.2512,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7912,
+        "std": 0.1756,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2094,
+        "std": 0.0719,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_lr_v2_inter",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.6093,
+        "std": 0.0071,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7889,
+        "std": 0.0071,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5002,
+        "std": 0.0012,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.1947,
+        "std": 0.003,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_lr_v2_inter",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5706,
+        "std": 0.2592,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7956,
+        "std": 0.1722,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2091,
+        "std": 0.0719,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_lr_v2_inter",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5826,
+        "std": 0.2658,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.8026,
+        "std": 0.1686,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2091,
+        "std": 0.0718,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_mlp_v2_grouped",
+      "split": "train",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5147,
+        "std": 0.0444,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.735,
+        "std": 0.0252,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.503,
+        "std": 0.011,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2487,
+        "std": 0.0328,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_mlp_v2_grouped",
+      "split": "val",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5217,
+        "std": 0.2178,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7676,
+        "std": 0.1659,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.4813,
+        "std": 0.1138,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2464,
+        "std": 0.0416,
+        "n_valid_folds": 40
+      }
+    },
+    {
+      "model": "context_mlp_v2_grouped",
+      "split": "test",
+      "n_folds": 40,
+      "auroc": {
+        "mean": 0.5274,
+        "std": 0.2018,
+        "n_valid_folds": 40
+      },
+      "auprc": {
+        "mean": 0.7735,
+        "std": 0.1429,
+        "n_valid_folds": 40
+      },
+      "balanced_acc": {
+        "mean": 0.5247,
+        "std": 0.0852,
+        "n_valid_folds": 40
+      },
+      "brier": {
+        "mean": 0.2431,
+        "std": 0.0401,
+        "n_valid_folds": 40
+      }
+    }
+  ],
+  "per_fold_path": "results/tables/baselines_context_lr_v2_context_lr_v2_inter_context_mlp_v2_grouped_20261030_151134.csv"
+}

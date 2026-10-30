@@ -49,7 +49,7 @@ from sklearn.metrics import (average_precision_score, balanced_accuracy_score,
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.models.context_mlp import ContextMLP  # noqa: E402
+from src.models.context_mlp import ContextMLP, GroupedContextMLP  # noqa: E402
 from src.training.train_loop import predict, train_one_fold  # noqa: E402
 
 EVENTS_PATH = PROJECT_ROOT / "data" / "metadata" / "events.csv"
@@ -70,6 +70,35 @@ CONTEXT_NUMERIC = ["round_number", "team_score_before", "opponent_score_before",
                    "kicks_taken_before", "history_rate", "history_missing"]
 # history_missing=1 时 history_rate 无意义 → 由缺失指示列让 LR 自行学偏置；
 # attempts=0（跨 3 季非主罚）是合法值，rate 按 plan 的平滑公式落在 0.5，不视为缺失
+
+CONTEXT_V2 = ["sudden_death", "is_trailing", "kick_order_second", "score_diff",
+              "has_history", "history_rate"]
+
+
+def build_context_matrix_v2(ev: pd.DataFrame, p_bar: float, alpha: float = 5.0,
+                            clip: int = 2) -> pd.DataFrame:
+    """v2 context 特征（6 维，定义见 src/config/context_v2.yaml 头注）。
+
+    样本口径与 v1 完全一致（385 行，含 history_missing=1 的 3 行——m009 的
+    全部 miss 在其中，排除会击穿 fold 8 的负类）。无历史记录（attempts=0 或
+    history_missing=1）时 history_rate 统一填收缩先验 p̄，has_history=0，
+    与 attempts=0 的多数行同构处理，不设样本级排除。
+
+    p̄（收缩目标）由调用方传入训练集估计值——本函数不估计任何统计量，
+    保证 α/p̄/截断界全部来自 train（硬约束 5）。
+    """
+    sd = (ev["team_score_before"].astype(float) - ev["opponent_score_before"].astype(float)).clip(-clip, clip)
+    rate = (ev["history_goals"] + alpha * p_bar) / (ev["history_attempts"] + alpha)
+    no_hist = (ev["history_attempts"].fillna(0) <= 0) | (ev["history_missing"].fillna(0).astype(int) == 1)
+    rate = rate.where(~no_hist, p_bar)
+    return pd.DataFrame({
+        "sudden_death": ev["sudden_death"].astype(float).to_numpy(),
+        "is_trailing": (ev["team_score_before"] < ev["opponent_score_before"]).astype(float).to_numpy(),
+        "kick_order_second": (ev["kick_order_in_round"] == "second").astype(float).to_numpy(),
+        "score_diff": sd.to_numpy(),
+        "has_history": (ev["history_attempts"] > 0).astype(float).to_numpy(),
+        "history_rate": rate.to_numpy(),
+    }, index=ev["event_id"])
 
 
 def load_valid_events() -> pd.DataFrame:
@@ -174,6 +203,147 @@ def run_context_mlp(folds: list[dict], ev: pd.DataFrame, cfg: dict, seed: int) -
             p = predict(model, Xs.to_numpy())
             m = metrics(y_all.loc[fold[f"{split}_event_ids"]].values, p)
             rows.append({"fold_id": fold["fold_id"], "model": "context_mlp", "split": split,
+                         **m, "best_epoch": hist["best_epoch"],
+                         "best_val_auroc": round(hist["best_val_auroc"], 4)})
+    return rows
+
+
+def run_context_lr_v2(folds: list[dict], ev_all: pd.DataFrame, seed: int,
+                      cfg: dict) -> list[dict]:
+    """B1v2：v2 context 特征 + LR，协议与 B1 相同（标准化只来自 train，硬约束 5）。
+
+    α/p̄（history_rate 收缩参数）与截断界只由各折训练集估计。
+    """
+    feat = cfg["features"]["context_v2"]
+    alpha = cfg["features"]["history_alpha"]
+    clip = cfg["features"]["score_diff_clip"]
+    y_all = (ev_all.set_index("event_id")["result"] == "goal").astype(int)
+    rows = []
+    for fold in folds:
+        tr_ids = fold["train_event_ids"]
+        p_bar = float(y_all.loc[tr_ids].mean())  # 收缩目标只来自 train
+        X_all = build_context_matrix_v2(ev_all, p_bar=p_bar, alpha=alpha, clip=clip)
+        assert list(X_all.columns) == feat, f"特征列 {list(X_all.columns)} != 配置 {feat}"
+        Xtr = X_all.loc[tr_ids]
+        ytr = y_all.loc[tr_ids].values
+        mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
+        lr = LogisticRegression(max_iter=1000, C=1.0, random_state=seed)
+        lr.fit((Xtr - mu) / sd, ytr)
+        for split in ("train", "val", "test"):
+            ids = fold[f"{split}_event_ids"]
+            Xs = (X_all.loc[ids] - mu) / sd
+            p = lr.predict_proba(Xs)[:, 1]
+            m = metrics(y_all.loc[ids].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "context_lr_v2", "split": split,
+                         **m, "p_bar": round(p_bar, 4),
+                         "coef": dict(zip(feat, np.round(lr.coef_[0], 4).tolist())),
+                         "intercept": round(float(lr.intercept_[0]), 4)})
+    return rows
+
+
+def run_context_mlp_v2(folds: list[dict], ev_all: pd.DataFrame, cfg: dict, seed: int) -> list[dict]:
+    """B2v2：v2 context 特征 + ContextMLP，协议与 B2 相同。"""
+    feat = cfg["features"]["context_v2"]
+    alpha = cfg["features"]["history_alpha"]
+    clip = cfg["features"]["score_diff_clip"]
+    y_all = (ev_all.set_index("event_id")["result"] == "goal").astype(int)
+    mc, tc = cfg["model"], cfg["training"]
+    rows = []
+    for fold in folds:
+        tr_ids = fold["train_event_ids"]
+        p_bar = float(y_all.loc[tr_ids].mean())
+        X_all = build_context_matrix_v2(ev_all, p_bar=p_bar, alpha=alpha, clip=clip)
+        assert list(X_all.columns) == feat, f"特征列 {list(X_all.columns)} != 配置 {feat}"
+        Xtr = X_all.loc[tr_ids]
+        ytr = y_all.loc[tr_ids].values
+        mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
+        Xtr_s, Xva_s, Xte_s = ((X_all.loc[fold[f"{s}_event_ids"]] - mu) / sd for s in ("train", "val", "test"))
+        model = ContextMLP(in_dim=len(feat), hidden=mc["hidden"], dropout=mc["dropout"])
+        state, hist = train_one_fold(
+            model, Xtr_s.to_numpy(), ytr, Xva_s.to_numpy(),
+            y_all.loc[fold["val_event_ids"]].values,
+            seed=seed, max_epochs=tc["max_epochs"], patience=tc["patience"],
+            lr=tc["lr"], weight_decay=tc["weight_decay"], batch_size=tc["batch_size"],
+        )
+        model.load_state_dict(state)
+        for split, Xs in (("train", Xtr_s), ("val", Xva_s), ("test", Xte_s)):
+            p = predict(model, Xs.to_numpy())
+            m = metrics(y_all.loc[fold[f"{split}_event_ids"]].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "context_mlp_v2", "split": split,
+                         **m, "best_epoch": hist["best_epoch"],
+                         "best_val_auroc": round(hist["best_val_auroc"], 4)})
+    return rows
+
+
+def run_context_lr_v2_inter(folds: list[dict], ev_all: pd.DataFrame, seed: int,
+                            cfg: dict) -> list[dict]:
+    """B1v2-int：v2 特征 + 2 个组内交互项（is_trailing×sudden_death, score_diff×sudden_death）。
+
+    交互项在标准化**之后**相乘（对 0/1 × 连续量，标准化后交互的语义是
+    "sudden_death 调制该特征的标准化偏移"），协议与 B1v2 相同。
+    """
+    feat = cfg["features"]["context_v2"]
+    alpha = cfg["features"]["history_alpha"]
+    clip = cfg["features"]["score_diff_clip"]
+    y_all = (ev_all.set_index("event_id")["result"] == "goal").astype(int)
+    inter_cols = ["is_trailing_x_sudden_death", "score_diff_x_sudden_death"]
+    rows = []
+    for fold in folds:
+        tr_ids = fold["train_event_ids"]
+        p_bar = float(y_all.loc[tr_ids].mean())
+        X_all = build_context_matrix_v2(ev_all, p_bar=p_bar, alpha=alpha, clip=clip)
+        mu, sd = X_all.loc[tr_ids].mean(axis=0), X_all.loc[tr_ids].std(axis=0).replace(0, 1.0)
+        Xz = (X_all - mu) / sd  # 交互在标准化后构造
+        Xz = pd.concat([Xz,
+                        (Xz["is_trailing"] * Xz["sudden_death"]).rename(inter_cols[0]),
+                        (Xz["score_diff"] * Xz["sudden_death"]).rename(inter_cols[1])], axis=1)
+        feat_i = feat + inter_cols
+        assert list(Xz.columns) == feat_i
+        lr = LogisticRegression(max_iter=1000, C=1.0, random_state=seed)
+        lr.fit(Xz.loc[tr_ids], y_all.loc[tr_ids].values)
+        for split in ("train", "val", "test"):
+            ids = fold[f"{split}_event_ids"]
+            p = lr.predict_proba(Xz.loc[ids])[:, 1]
+            m = metrics(y_all.loc[ids].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "context_lr_v2_inter", "split": split,
+                         **m, "p_bar": round(p_bar, 4),
+                         "coef": dict(zip(feat_i, np.round(lr.coef_[0], 4).tolist())),
+                         "intercept": round(float(lr.intercept_[0]), 4)})
+    return rows
+
+
+def run_context_mlp_grouped(folds: list[dict], ev_all: pd.DataFrame, cfg: dict, seed: int) -> list[dict]:
+    """B2v2-g：分组双隐层 MLP（GroupedContextMLP），其余协议与 B2v2 相同。"""
+    feat = cfg["features"]["context_v2"]
+    alpha = cfg["features"]["history_alpha"]
+    clip = cfg["features"]["score_diff_clip"]
+    y_all = (ev_all.set_index("event_id")["result"] == "goal").astype(int)
+    mc, tc = cfg["model"], cfg["training"]
+    gp = mc.get("grouped", {})
+    rows = []
+    for fold in folds:
+        tr_ids = fold["train_event_ids"]
+        p_bar = float(y_all.loc[tr_ids].mean())
+        X_all = build_context_matrix_v2(ev_all, p_bar=p_bar, alpha=alpha, clip=clip)
+        assert list(X_all.columns) == feat
+        Xtr = X_all.loc[tr_ids]
+        ytr = y_all.loc[tr_ids].values
+        mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
+        Xtr_s, Xva_s, Xte_s = ((X_all.loc[fold[f"{s}_event_ids"]] - mu) / sd for s in ("train", "val", "test"))
+        model = GroupedContextMLP(hidden_situ=gp.get("hidden_situ", 2),
+                                  hidden_hist=gp.get("hidden_hist", 1),
+                                  dropout=mc["dropout"])
+        state, hist = train_one_fold(
+            model, Xtr_s.to_numpy(), ytr, Xva_s.to_numpy(),
+            y_all.loc[fold["val_event_ids"]].values,
+            seed=seed, max_epochs=tc["max_epochs"], patience=tc["patience"],
+            lr=tc["lr"], weight_decay=tc["weight_decay"], batch_size=tc["batch_size"],
+        )
+        model.load_state_dict(state)
+        for split, Xs in (("train", Xtr_s), ("val", Xva_s), ("test", Xte_s)):
+            p = predict(model, Xs.to_numpy())
+            m = metrics(y_all.loc[fold[f"{split}_event_ids"]].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "context_mlp_v2_grouped", "split": split,
                          **m, "best_epoch": hist["best_epoch"],
                          "best_val_auroc": round(hist["best_val_auroc"], 4)})
     return rows
@@ -383,7 +553,7 @@ def save_outputs(all_rows: list[dict], models: list[str], seed: int,
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--models", default="majority,context_lr",
-                    help="逗号分隔: majority,context_lr,context_mlp,emotion_lr,fer_lr,fused_lr,imagenet_lr（默认前两个）")
+                    help="逗号分隔: majority,context_lr,context_mlp,emotion_lr,fer_lr,fused_lr,imagenet_lr,context_lr_v2,context_mlp_v2（默认前两个）")
     ap.add_argument("--config", default="src/config/context_mlp.yaml",
                     help="context_mlp 的超参配置（plan §8：配置驱动）")
     ap.add_argument("--seed", type=int, default=2026, help="随机种子（LR/lbfgs 几乎无随机性，仅为可复现记录）")
@@ -408,13 +578,17 @@ def main() -> int:
         return 0
 
     models = [m.strip() for m in args.models.split(",") if m.strip()]
-    unknown = set(models) - {"majority", "context_lr", "context_mlp", "emotion_lr", "fer_lr", "fused_lr", "imagenet_lr"}
+    unknown = set(models) - {"majority", "context_lr", "context_mlp", "emotion_lr",
+                             "fer_lr", "fused_lr", "imagenet_lr",
+                             "context_lr_v2", "context_mlp_v2",
+                             "context_lr_v2_inter", "context_mlp_v2_grouped"}
     if unknown:
-        print(f"未知模型: {sorted(unknown)}（可用: majority, context_lr, context_mlp, emotion_lr, fer_lr, fused_lr, imagenet_lr）", file=sys.stderr)
+        print(f"未知模型: {sorted(unknown)}（可用: majority, context_lr, context_mlp, emotion_lr, fer_lr, fused_lr, imagenet_lr, context_lr_v2, context_mlp_v2, context_lr_v2_inter, context_mlp_v2_grouped）", file=sys.stderr)
         return 1
 
     cfg = None
-    if "context_mlp" in models:
+    if {"context_mlp", "context_lr_v2", "context_mlp_v2",
+        "context_lr_v2_inter", "context_mlp_v2_grouped"} & set(models):
         cfg_path = PROJECT_ROOT / args.config
         if not cfg_path.exists():
             print(f"缺配置文件: {cfg_path}", file=sys.stderr)
@@ -429,6 +603,14 @@ def main() -> int:
         all_rows += run_context_lr(folds, ev, args.seed)
     if "context_mlp" in models:
         all_rows += run_context_mlp(folds, ev, cfg, args.seed)
+    if "context_lr_v2" in models:
+        all_rows += run_context_lr_v2(folds, ev, args.seed, cfg)
+    if "context_mlp_v2" in models:
+        all_rows += run_context_mlp_v2(folds, ev, cfg, args.seed)
+    if "context_lr_v2_inter" in models:
+        all_rows += run_context_lr_v2_inter(folds, ev, args.seed, cfg)
+    if "context_mlp_v2_grouped" in models:
+        all_rows += run_context_mlp_grouped(folds, ev, cfg, args.seed)
     if "emotion_lr" in models:
         all_rows += run_emotion_lr(folds, ev, args.seed)
     if "fer_lr" in models:
