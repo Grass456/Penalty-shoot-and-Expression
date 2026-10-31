@@ -22,6 +22,8 @@
       理由见 run_fer_lr docstring），回答 H1（FER 表征有无额外信号）；
     - M3 Fused LR：context 6 维 + FER embedding 拼接（1286 维），同一 C=0.01，
       回答 H3（context 之外 FER 有无融合增益）；
+    - M3v2 Fused LR v2：context 基座换成已定稿的 v2 六维（与 B1v2 同基座），
+      其余协议与 M3 完全一致，使 M3v2 − M3 只归因于 context 基座；
     - B4 ImageNet LR：efficientnet_b0 frozen embedding 对照臂，与 M1 同协议，
       M1-B4 之差 = 情绪域预训练增益（H1 判据）；
     - 指标：AUROC / AUPRC / Balanced Acc / Brier（硬约束 7），逐折 + 聚合；
@@ -430,6 +432,54 @@ def run_fer_lr(folds: list[dict], ev: pd.DataFrame, seed: int) -> list[dict]:
     return rows
 
 
+def run_fused_lr_v2(folds: list[dict], ev_all: pd.DataFrame, seed: int, cfg: dict) -> list[dict]:
+    """M3v2：context **v2** 6 维 + FER embedding 1280 维拼接 + 强 L2 LR（回答 H3 融合增益）。
+
+    与 M3（v1 context）唯一差别是 context 基座换成已定稿的 v2 六维（B1v2 主臂 0.577）。
+    正则与协议刻意与 M3 完全一致（同一 C=0.01 施加于全部 1286 维、标准化只来自 train），
+    这样 M3v2 − M3 的差就只归因于 context 基座，而不是融合超参。
+
+    α（history_rate 收缩强度）与 p̄（收缩目标）仍只由各折训练集估计（硬约束 5）；
+    v2 的 build_context_matrix_v2 在每折内用本折 train 的 p̄ 重建。
+    """
+    feat = cfg["features"]["context_v2"]
+    alpha = cfg["features"]["history_alpha"]
+    clip = cfg["features"]["score_diff_clip"]
+    _, emb = load_fer_cache()
+    missing = set(ev_all["event_id"]) - set(emb.index)
+    if missing:
+        raise ValueError(f"{len(missing)} 个有效样本不在特征缓存中（events.csv 是否已变更？需重跑 cache_fer_features.py）: {sorted(missing)[:5]}...")
+    y_all = (ev_all.set_index("event_id")["result"] == "goal").astype(int)
+    rows = []
+    for fold in folds:
+        tr_ids = fold["train_event_ids"]
+        p_bar = float(y_all.loc[tr_ids].mean())  # 收缩目标只来自 train
+        ctx = build_context_matrix_v2(ev_all, p_bar=p_bar, alpha=alpha, clip=clip)
+        assert list(ctx.columns) == feat, f"特征列 {list(ctx.columns)} != 配置 {feat}"
+        X_all = pd.concat([ctx, emb], axis=1)
+        assert list(X_all.columns) == feat + list(emb.columns)  # 列对齐防拼接错位
+        Xtr = X_all.loc[tr_ids]
+        ytr = y_all.loc[tr_ids].values
+        mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
+        lr = LogisticRegression(max_iter=5000, C=0.01, random_state=seed)
+        lr.fit((Xtr - mu) / sd, ytr)
+        coef = lr.coef_[0]
+        top10 = sorted(X_all.columns, key=lambda c: abs(coef[X_all.columns.get_loc(c)]), reverse=True)[:10]
+        ctx_l2 = float(np.linalg.norm(coef[:len(feat)]))   # context 部分的系数范数
+        fer_l2 = float(np.linalg.norm(coef[len(feat):]))   # embedding 部分
+        for split in ("train", "val", "test"):
+            Xs = (X_all.loc[fold[f"{split}_event_ids"]] - mu) / sd
+            p = lr.predict_proba(Xs)[:, 1]
+            m = metrics(y_all.loc[fold[f"{split}_event_ids"]].values, p)
+            rows.append({"fold_id": fold["fold_id"], "model": "fused_lr_v2", "split": split,
+                         **m, "p_bar": round(p_bar, 4),
+                         "coef_l2": round(float(np.linalg.norm(coef)), 4),
+                         "ctx_coef_l2": round(ctx_l2, 4), "fer_coef_l2": round(fer_l2, 4),
+                         "n_ctx_in_top10": int(sum(1 for c in top10 if c in feat)),
+                         "top10_abs_coef": top10})
+    return rows
+
+
 def run_fused_lr(folds: list[dict], ev: pd.DataFrame, seed: int) -> list[dict]:
     """M3：context 6 维 + FER embedding 1280 维拼接 + 强 L2 LR（回答 H3 融合增益）。
 
@@ -539,6 +589,9 @@ def save_outputs(all_rows: list[dict], models: list[str], seed: int,
                    "rationale": "n_train~96 vs d=1280，固定强 L2；val 单场不可靠故不做逐折 C 扫描"},
         "fused_lr": {"C": 0.01, "max_iter": 5000,
                      "rationale": "与 M1 同一 C 施加于全部 1286 维；M3 判读为同正则强度下融合是否不低于单臂，不做融合超参调优"},
+        "fused_lr_v2": {"C": 0.01, "max_iter": 5000,
+                        "rationale": "context 基座换 v2 六维（与 B1v2 主臂一致），正则/协议与 M3 完全相同，使 M3v2-M3 只归因于 context 基座"},
+        "context_v2": {"history_alpha": "由配置", "note": "B1v2/M3v2 的 p̄（收缩目标）逐折只由 train 估计（硬约束 5）"},
         "imagenet_lr": {"C": 0.01, "max_iter": 5000,
                         "rationale": "与 M1 完全同协议，仅特征来源不同（ImageNet vs FER 预训练）"},
         "aggregates": agg,
@@ -553,7 +606,7 @@ def save_outputs(all_rows: list[dict], models: list[str], seed: int,
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--models", default="majority,context_lr",
-                    help="逗号分隔: majority,context_lr,context_mlp,emotion_lr,fer_lr,fused_lr,imagenet_lr,context_lr_v2,context_mlp_v2（默认前两个）")
+                    help="逗号分隔: majority,context_lr,context_mlp,emotion_lr,fer_lr,fused_lr,fused_lr_v2,imagenet_lr,context_lr_v2,context_mlp_v2（默认前两个）")
     ap.add_argument("--config", default="src/config/context_mlp.yaml",
                     help="context_mlp 的超参配置（plan §8：配置驱动）")
     ap.add_argument("--seed", type=int, default=2026, help="随机种子（LR/lbfgs 几乎无随机性，仅为可复现记录）")
@@ -579,15 +632,15 @@ def main() -> int:
 
     models = [m.strip() for m in args.models.split(",") if m.strip()]
     unknown = set(models) - {"majority", "context_lr", "context_mlp", "emotion_lr",
-                             "fer_lr", "fused_lr", "imagenet_lr",
+                             "fer_lr", "fused_lr", "fused_lr_v2", "imagenet_lr",
                              "context_lr_v2", "context_mlp_v2",
                              "context_lr_v2_inter", "context_mlp_v2_grouped"}
     if unknown:
-        print(f"未知模型: {sorted(unknown)}（可用: majority, context_lr, context_mlp, emotion_lr, fer_lr, fused_lr, imagenet_lr, context_lr_v2, context_mlp_v2, context_lr_v2_inter, context_mlp_v2_grouped）", file=sys.stderr)
+        print(f"未知模型: {sorted(unknown)}（可用: majority, context_lr, context_mlp, emotion_lr, fer_lr, fused_lr, fused_lr_v2, imagenet_lr, context_lr_v2, context_mlp_v2, context_lr_v2_inter, context_mlp_v2_grouped）", file=sys.stderr)
         return 1
 
     cfg = None
-    if {"context_mlp", "context_lr_v2", "context_mlp_v2",
+    if {"context_mlp", "context_lr_v2", "context_mlp_v2", "fused_lr_v2",
         "context_lr_v2_inter", "context_mlp_v2_grouped"} & set(models):
         cfg_path = PROJECT_ROOT / args.config
         if not cfg_path.exists():
@@ -617,6 +670,8 @@ def main() -> int:
         all_rows += run_fer_lr(folds, ev, args.seed)
     if "fused_lr" in models:
         all_rows += run_fused_lr(folds, ev, args.seed)
+    if "fused_lr_v2" in models:
+        all_rows += run_fused_lr_v2(folds, ev, args.seed, cfg)
     if "imagenet_lr" in models:
         all_rows += run_imagenet_lr(folds, ev, args.seed)
     if not all_rows:

@@ -1,0 +1,162 @@
+{
+  "created_at": "2026-10-31T13:45:18",
+  "purpose": "瓶颈维度扫描：情绪头（8 维）相对同维随机投影/PCA 的位置，判定 B3 臂 0.57-0.61 是降维效应还是情绪语义信号",
+  "C": 0.01,
+  "draws_per_dim": 60,
+  "dims": [
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "seed": 2026,
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "1d4a2239a85cfbd9"
+  },
+  "n_valid_events": 385,
+  "statistics": {
+    "fold_mean": "逐折 AUROC 均值（历史口径，零分布均值≈0.50，见 oof_stats 报告）",
+    "pooled_rank": "折内转秩后 pool 的 OOF AUROC（推荐口径）"
+  },
+  "verdicts": {
+    "enet_b2_8": {
+      "emo_head": {
+        "fold_mean": {
+          "value": 0.5994,
+          "random_mean": 0.5216,
+          "random_p95": 0.5838,
+          "z_vs_random": 1.6,
+          "n_random_above": 2,
+          "n_random": 60
+        },
+        "pooled_rank": {
+          "value": 0.5613,
+          "random_mean": 0.5067,
+          "random_p95": 0.5516,
+          "z_vs_random": 1.45,
+          "n_random_above": 1,
+          "n_random": 60
+        }
+      },
+      "pca_same_k": {
+        "fold_mean": {
+          "value": 0.5861
+        },
+        "pooled_rank": {
+          "value": 0.5459
+        }
+      },
+      "random_pooled_rank_by_k": {
+        "2": 0.5086,
+        "4": 0.5146,
+        "8": 0.5067,
+        "16": 0.5087,
+        "32": 0.4999,
+        "64": 0.4905,
+        "128": 0.4815
+      }
+    },
+    "enet_b2_7": {
+      "random_pooled_rank_by_k": {
+        "2": 0.5054,
+        "4": 0.5162,
+        "8": 0.5152,
+        "16": 0.523,
+        "32": 0.5225,
+        "64": 0.5128,
+        "128": 0.5041
+      }
+    },
+    "enet_b0_8_best_afew": {
+      "emo_head": {
+        "fold_mean": {
+          "value": 0.5191,
+          "random_mean": 0.5054,
+          "random_p95": 0.5923,
+          "z_vs_random": 0.28,
+          "n_random_above": 22,
+          "n_random": 60
+        },
+        "pooled_rank": {
+          "value": 0.5101,
+          "random_mean": 0.4988,
+          "random_p95": 0.5708,
+          "z_vs_random": 0.27,
+          "n_random_above": 21,
+          "n_random": 60
+        }
+      },
+      "pca_same_k": {
+        "fold_mean": {
+          "value": 0.4869
+        },
+        "pooled_rank": {
+          "value": 0.4769
+        }
+      },
+      "random_pooled_rank_by_k": {
+        "2": 0.5054,
+        "4": 0.4988,
+        "8": 0.4988,
+        "16": 0.4944,
+        "32": 0.4798,
+        "64": 0.4782,
+        "128": 0.4722
+      }
+    },
+    "enet_b0_8_best_vgaf": {
+      "emo_head": {
+        "fold_mean": {
+          "value": 0.5101,
+          "random_mean": 0.5077,
+          "random_p95": 0.5777,
+          "z_vs_random": 0.05,
+          "n_random_above": 29,
+          "n_random": 60
+        },
+        "pooled_rank": {
+          "value": 0.5075,
+          "random_mean": 0.5014,
+          "random_p95": 0.5481,
+          "z_vs_random": 0.15,
+          "n_random_above": 31,
+          "n_random": 60
+        }
+      },
+      "pca_same_k": {
+        "fold_mean": {
+          "value": 0.4953
+        },
+        "pooled_rank": {
+          "value": 0.4842
+        }
+      },
+      "random_pooled_rank_by_k": {
+        "2": 0.503,
+        "4": 0.5041,
+        "8": 0.5014,
+        "16": 0.4945,
+        "32": 0.4935,
+        "64": 0.5042,
+        "128": 0.4883
+      }
+    },
+    "imagenet_b0": {
+      "random_pooled_rank_by_k": {
+        "2": 0.488,
+        "4": 0.4959,
+        "8": 0.4817,
+        "16": 0.4942,
+        "32": 0.4874,
+        "64": 0.4786,
+        "128": 0.4918
+      }
+    }
+  },
+  "interpretation_rule": "情绪头须显著超出同 k 随机投影分布（>p95 或 z>2）才支持情绪语义方向有独立贡献；否则判为降维瓶颈效应",
+  "per_draw_csv": "results/tables/bottleneck_sweep_20261031_134518.csv"
+}
