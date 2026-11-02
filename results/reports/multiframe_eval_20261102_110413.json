@@ -1,0 +1,78 @@
+{
+  "created_at": "2026-11-02T11:04:13",
+  "purpose": "M5：多帧聚合 vs 单帧（同 356 子集同协议），检验方向 2（单帧测量噪声掩埋信号）",
+  "hypothesis": "若 multi > single：测量噪声是主因；若两者皆≈0.5：单帧/多帧都无信号（更强负面结论）",
+  "grid": [
+    0.1
+  ],
+  "seed": 2026,
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "1d4a2239a85cfbd9",
+    "rebuilt": "40 折 LOMO 收缩到 356 子集（剔除空踢次，丢全空折）"
+  },
+  "n_subset": 356,
+  "n_folds": 40,
+  "arms": {
+    "single_356|C=0.1": {
+      "fold_mean": 0.4571,
+      "fold_mean_se": 0.041,
+      "n_folds_gt_half": 11,
+      "n_folds": 40,
+      "pooled_rank": 0.4412
+    },
+    "multi_mean|C=0.1": {
+      "fold_mean": 0.472,
+      "fold_mean_se": 0.0413,
+      "n_folds_gt_half": 16,
+      "n_folds": 40,
+      "pooled_rank": 0.485
+    },
+    "multi_median|C=0.1": {
+      "fold_mean": 0.4913,
+      "fold_mean_se": 0.0395,
+      "n_folds_gt_half": 17,
+      "n_folds": 40,
+      "pooled_rank": 0.4993
+    },
+    "multi_last8|C=0.1": {
+      "fold_mean": 0.4841,
+      "fold_mean_se": 0.0418,
+      "n_folds_gt_half": 17,
+      "n_folds": 40,
+      "pooled_rank": 0.4992
+    }
+  },
+  "paired_multi_minus_single": {
+    "multi_mean|C=0.1": {
+      "mean_delta": 0.0149,
+      "std": 0.31,
+      "n_multi_gt_single": 23,
+      "n": 40
+    },
+    "multi_median|C=0.1": {
+      "mean_delta": 0.0342,
+      "std": 0.2721,
+      "n_multi_gt_single": 22,
+      "n": 40
+    },
+    "multi_last8|C=0.1": {
+      "mean_delta": 0.0271,
+      "std": 0.3241,
+      "n_multi_gt_single": 24,
+      "n": 40
+    }
+  },
+  "empty_kick_profile": {
+    "n_empty": 29,
+    "goal_rate_empty": 0.7586,
+    "goal_rate_kept": 0.7191,
+    "note": "若两者 goal 率差异大，356 子集的结论不能外推回 385"
+  },
+  "notes": [
+    "单帧/多帧在同一 356 子集上对比，样本集变化不进入差异",
+    "fold_mean 须与置换零分布比较（约 0.50±0.04），pooled_rank 为推荐口径",
+    "multi_last8 与 multi_mean 的差 = 时间加权效应（越近触球的帧权重更高）"
+  ],
+  "table_path": "results/tables/multiframe_eval_20261102_110413.csv"
+}

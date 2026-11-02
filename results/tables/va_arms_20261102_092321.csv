@@ -1,0 +1,15 @@
+arm,cache,key,C,fold_mean,fold_mean_se,n_folds_gt_half,n_folds,pooled_rank
+MTL-emb1280 (enet_b0_va),enet_b0_8_va_mtl,embedding,0.01,0.5051,0.0435,19,40,0.4969
+MTL-emb512 (mbf_va),mbf_va_mtl,embedding,0.01,0.4956,0.0402,19,40,0.4892
+MTL-emb768 (mobilevit_va),mobilevit_va_mtl,embedding,0.01,0.4745,0.0355,16,40,0.4569
+"8cls-emb1280 (vgaf, 对照)",enet_b0_8_best_vgaf,embedding,0.01,0.4754,0.042,19,40,0.4578
+ImageNet-emb1280 (对照),imagenet_b0,embedding,0.01,0.4711,0.0467,18,40,0.4651
+"VA2 (enet_b0_va, C=0.01)",enet_b0_8_va_mtl,va,0.01,0.5206,0.0473,17,40,0.5055
+"VA2 (mbf_va, C=0.01)",mbf_va_mtl,va,0.01,0.5784,0.0395,20,40,0.5459
+"VA2 (mobilevit_va, C=0.01)",mobilevit_va_mtl,va,0.01,0.56,0.0463,24,40,0.5367
+"VA2 (enet_b0_va, C=0.1)",enet_b0_8_va_mtl,va,0.1,0.5122,0.0473,16,40,0.4986
+"VA2 (mbf_va, C=0.1)",mbf_va_mtl,va,0.1,0.5928,0.0405,23,40,0.5479
+"VA2 (mobilevit_va, C=0.1)",mobilevit_va_mtl,va,0.1,0.5567,0.0465,23,40,0.5369
+"VA2 (enet_b0_va, C=1.0)",enet_b0_8_va_mtl,va,1.0,0.5112,0.0478,16,40,0.4976
+"VA2 (mbf_va, C=1.0)",mbf_va_mtl,va,1.0,0.5971,0.0396,24,40,0.5494
+"VA2 (mobilevit_va, C=1.0)",mobilevit_va_mtl,va,1.0,0.554,0.0462,23,40,0.5338

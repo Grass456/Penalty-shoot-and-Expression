@@ -97,7 +97,7 @@ data/faces/**/*.bmp
 data/processed/**/*.jpg
 data/processed/**/*.jpeg
 data/processed/**/*.png
-
+data/faces_multiframe
 # 外部数据集
 data/external/
 
