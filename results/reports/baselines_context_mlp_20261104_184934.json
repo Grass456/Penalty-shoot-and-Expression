@@ -1,0 +1,157 @@
+{
+  "created_at": "2026-11-04T18:49:34",
+  "models": [
+    "context_mlp"
+  ],
+  "seed": 2026,
+  "config": {
+    "features": {
+      "context_numeric": [
+        "round_number",
+        "team_score_before",
+        "opponent_score_before",
+        "kicks_taken_before",
+        "history_rate",
+        "history_missing"
+      ],
+      "beta_alpha": 1.0,
+      "beta_beta": 1.0
+    },
+    "model": {
+      "hidden": 16,
+      "dropout": 0.3
+    },
+    "training": {
+      "seed": 2026,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "max_epochs": 200,
+      "patience": 30,
+      "batch_size": null
+    },
+    "paths": {
+      "folds": "folds/match_disjoint.json",
+      "events": "data/metadata/events.csv"
+    }
+  },
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "ba2018cfdf9ecacc"
+  },
+  "events_fingerprint": "07d41a0c661e176f",
+  "n_valid_events": 385,
+  "context_features": [
+    "round_number",
+    "team_score_before",
+    "opponent_score_before",
+    "kicks_taken_before",
+    "history_rate",
+    "history_missing"
+  ],
+  "beta_smoothing": {
+    "alpha": 1.0,
+    "beta": 1.0
+  },
+  "fer_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "n_train~96 vs d=1280，固定强 L2；val 单场不可靠故不做逐折 C 扫描"
+  },
+  "fused_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 同一 C 施加于全部 1286 维；M3 判读为同正则强度下融合是否不低于单臂，不做融合超参调优"
+  },
+  "fused_lr_v2": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "context 基座换 v2 六维（与 B1v2 主臂一致），正则/协议与 M3 完全相同，使 M3v2-M3 只归因于 context 基座"
+  },
+  "context_v2": {
+    "history_alpha": "由配置",
+    "note": "B1v2/M3v2 的 p̄（收缩目标）逐折只由 train 估计（硬约束 5）"
+  },
+  "imagenet_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 完全同协议，仅特征来源不同（ImageNet vs FER 预训练）"
+  },
+  "aggregates": [
+    {
+      "model": "context_mlp",
+      "split": "train",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5531,
+        "std": 0.012,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7548,
+        "std": 0.0186,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5166,
+        "std": 0.0216,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2296,
+        "std": 0.0175,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_mlp",
+      "split": "val",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5447,
+        "std": 0.0176,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7714,
+        "std": 0.0466,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5093,
+        "std": 0.0073,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2284,
+        "std": 0.0306,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_mlp",
+      "split": "test",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5592,
+        "std": 0.0344,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7582,
+        "std": 0.0532,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5267,
+        "std": 0.0709,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2336,
+        "std": 0.0184,
+        "n_valid_folds": 5
+      }
+    }
+  ],
+  "per_fold_path": "results/tables/baselines_context_mlp_20261104_184934.csv"
+}

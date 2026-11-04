@@ -1,0 +1,34 @@
+# Context 特征组消融判读标准（2026-11-04 预注册，在跑 eval_context_ablation.py 之前写定）
+#
+# 目的（plan §12 A5 / §20 表 4）：context 臂的性能主要依赖哪一类变量。
+#
+# 特征组（plan §6.6 的五类 → 实际只编码了三类）
+#   round_order = {sudden_death, kick_order_second}   （plan §6.6.3 轮次类）
+#   score_state = {is_trailing, score_diff}           （plan §6.6.4 罚球前比分类）
+#   history     = {has_history, history_rate}         （plan §6.6.1 历史表现类）
+#   full        = 全部 6 维（= 当前主臂 B1v2 的输入）
+#   未编码的两类：主客场（§6.6.2）与赛事类别（§6.6.5），2026-11-04 经用户决定不纳入，
+#   在论文中记为偏离；表 4 对应两行标注为 not modeled。
+#
+# 变体
+#   主判定：full、minus_round_order、minus_score_state、minus_history（每次移除一组）。
+#   次要（描述性，不参与判定）：单维移除 6 个变体；B2v2 MLP 臂（只报观测值，不做置换）。
+#
+# 设计
+#   - 划分 / seed / 统计量 / 置换协议与 eval_repeated_splits.py 完全一致：match-disjoint
+#     5 折、split seed 2027-2036、pooled_rank、200 次全流程 refit 置换、同一 perm seed 12345。
+#   - 特征矩阵 = build_context_matrix_v2 的**列子集**（同一函数、同一 train-only p̄ 与 α 规则），
+#     保证消融只改变输入维度，不引入任何预处理语义差异。
+#   - 主臂 LR C=1.0（= B1v2 的设定，事先固定）。
+#   - 前置一致性断言：full 变体须逐 seed 复现 repeated_splits_20261104_141443.json 的 B1v2
+#     per_seed_pooled_rank（|Δ| < 1e-6），否则中止——消融实现若引入额外变化，全部 Δ 不可信。
+#
+# 判定
+#   某特征组"有正贡献"：Δ = pooled_rank(full) − pooled_rank(去掉该组)，要求
+#     (a) 10 个 seed 中 ≥8 个 Δ > 0；(b) 配对置换 p_Δ < 0.05（单侧）。
+#   Δ < 0（移除后反而更好）按原样报告，读作"该组在当前样本量下无正贡献"。
+#   由于 full 本身的 pooled_rank 未达显著（已知 B1v2 p=0.060），三组消融的结论一律只能写成
+#   "在检测下限（零分布 p95≈0.55-0.57）内无法分辨该组的边际贡献"，不能写成"该组无用"。
+#
+# 预期：full 复现 0.553 / p≈0.060；三个组的 Δ 都不过配对置换检验；history 组预期贡献最小
+#   （history_attempts 中位数为 0）。

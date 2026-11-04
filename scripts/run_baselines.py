@@ -54,6 +54,19 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.models.context_mlp import ContextMLP, GroupedContextMLP  # noqa: E402
 from src.training.train_loop import predict, train_one_fold  # noqa: E402
 
+
+def seeded_model(ctor, seed: int, *args, **kwargs):
+    """建 MLP 前显式 seed（2026-11-04 事后修正）。
+
+    train_one_fold 只在函数内部 manual_seed，那已是模型构造之后 —— 初始权重因此取自
+    进程全局 RNG 状态，同 seed 重跑会得到不同初值。LR 臂无此问题。所有 MLP 臂必须经此
+    构造，否则逐位不可复现。
+    """
+    import torch
+
+    torch.manual_seed(seed)
+    return ctor(*args, **kwargs)
+
 EVENTS_PATH = PROJECT_ROOT / "data" / "metadata" / "events.csv"
 FOLDS_PATH = PROJECT_ROOT / "folds" / "match_disjoint.json"
 TABLES_DIR = PROJECT_ROOT / "results" / "tables"
@@ -193,7 +206,8 @@ def run_context_mlp(folds: list[dict], ev: pd.DataFrame, cfg: dict, seed: int) -
         ytr = y_all.loc[fold["train_event_ids"]].values
         mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)  # 标准化器只来自 train（硬约束 5）
         Xtr_s, Xva_s, Xte_s = ((X_all.loc[fold[f"{s}_event_ids"]] - mu) / sd for s in ("train", "val", "test"))
-        model = ContextMLP(in_dim=len(feat), hidden=mc["hidden"], dropout=mc["dropout"])
+        model = seeded_model(ContextMLP, seed,
+                             in_dim=len(feat), hidden=mc["hidden"], dropout=mc["dropout"])
         state, hist = train_one_fold(
             model, Xtr_s.to_numpy(), ytr, Xva_s.to_numpy(),
             y_all.loc[fold["val_event_ids"]].values,
@@ -260,7 +274,8 @@ def run_context_mlp_v2(folds: list[dict], ev_all: pd.DataFrame, cfg: dict, seed:
         ytr = y_all.loc[tr_ids].values
         mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
         Xtr_s, Xva_s, Xte_s = ((X_all.loc[fold[f"{s}_event_ids"]] - mu) / sd for s in ("train", "val", "test"))
-        model = ContextMLP(in_dim=len(feat), hidden=mc["hidden"], dropout=mc["dropout"])
+        model = seeded_model(ContextMLP, seed,
+                             in_dim=len(feat), hidden=mc["hidden"], dropout=mc["dropout"])
         state, hist = train_one_fold(
             model, Xtr_s.to_numpy(), ytr, Xva_s.to_numpy(),
             y_all.loc[fold["val_event_ids"]].values,
@@ -332,9 +347,10 @@ def run_context_mlp_grouped(folds: list[dict], ev_all: pd.DataFrame, cfg: dict, 
         ytr = y_all.loc[tr_ids].values
         mu, sd = Xtr.mean(axis=0), Xtr.std(axis=0).replace(0, 1.0)
         Xtr_s, Xva_s, Xte_s = ((X_all.loc[fold[f"{s}_event_ids"]] - mu) / sd for s in ("train", "val", "test"))
-        model = GroupedContextMLP(hidden_situ=gp.get("hidden_situ", 2),
-                                  hidden_hist=gp.get("hidden_hist", 1),
-                                  dropout=mc["dropout"])
+        model = seeded_model(GroupedContextMLP, seed,
+                             hidden_situ=gp.get("hidden_situ", 2),
+                             hidden_hist=gp.get("hidden_hist", 1),
+                             dropout=mc["dropout"])
         state, hist = train_one_fold(
             model, Xtr_s.to_numpy(), ytr, Xva_s.to_numpy(),
             y_all.loc[fold["val_event_ids"]].values,

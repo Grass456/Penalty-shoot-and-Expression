@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-11-04T13:44:19",
+  "created_at": "2026-11-04T18:50:36",
   "models": [
     "majority",
     "context_lr",
@@ -226,23 +226,23 @@
       "split": "train",
       "n_folds": 5,
       "auroc": {
-        "mean": 0.5055,
-        "std": 0.0224,
+        "mean": 0.5531,
+        "std": 0.012,
         "n_valid_folds": 5
       },
       "auprc": {
-        "mean": 0.7277,
-        "std": 0.0181,
+        "mean": 0.7548,
+        "std": 0.0186,
         "n_valid_folds": 5
       },
       "balanced_acc": {
-        "mean": 0.5151,
-        "std": 0.0201,
+        "mean": 0.5166,
+        "std": 0.0216,
         "n_valid_folds": 5
       },
       "brier": {
-        "mean": 0.2456,
-        "std": 0.0132,
+        "mean": 0.2296,
+        "std": 0.0175,
         "n_valid_folds": 5
       }
     },
@@ -251,23 +251,23 @@
       "split": "val",
       "n_folds": 5,
       "auroc": {
-        "mean": 0.5415,
-        "std": 0.0459,
+        "mean": 0.5447,
+        "std": 0.0176,
         "n_valid_folds": 5
       },
       "auprc": {
-        "mean": 0.7692,
-        "std": 0.0547,
+        "mean": 0.7714,
+        "std": 0.0466,
         "n_valid_folds": 5
       },
       "balanced_acc": {
-        "mean": 0.5138,
-        "std": 0.0539,
+        "mean": 0.5093,
+        "std": 0.0073,
         "n_valid_folds": 5
       },
       "brier": {
-        "mean": 0.2468,
-        "std": 0.0183,
+        "mean": 0.2284,
+        "std": 0.0306,
         "n_valid_folds": 5
       }
     },
@@ -276,23 +276,23 @@
       "split": "test",
       "n_folds": 5,
       "auroc": {
-        "mean": 0.4818,
-        "std": 0.0827,
+        "mean": 0.5592,
+        "std": 0.0344,
         "n_valid_folds": 5
       },
       "auprc": {
-        "mean": 0.7244,
-        "std": 0.0455,
+        "mean": 0.7582,
+        "std": 0.0532,
         "n_valid_folds": 5
       },
       "balanced_acc": {
-        "mean": 0.5317,
-        "std": 0.0294,
+        "mean": 0.5267,
+        "std": 0.0709,
         "n_valid_folds": 5
       },
       "brier": {
-        "mean": 0.2485,
-        "std": 0.0148,
+        "mean": 0.2336,
+        "std": 0.0184,
         "n_valid_folds": 5
       }
     },
@@ -597,5 +597,5 @@
       }
     }
   ],
-  "per_fold_path": "results/tables/baselines_majority_context_lr_context_mlp_emotion_lr_fer_lr_fused_lr_imagenet_lr_20261104_134419.csv"
+  "per_fold_path": "results/tables/baselines_majority_context_lr_context_mlp_emotion_lr_fer_lr_fused_lr_imagenet_lr_20261104_185036.csv"
 }

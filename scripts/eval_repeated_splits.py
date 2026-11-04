@@ -187,6 +187,12 @@ def fit_predict(data: dict, arm: dict, fold: dict, y: np.ndarray, seed: int) -> 
     from src.models.context_mlp import ContextMLP
     from src.training.train_loop import predict, train_one_fold
     torch.set_num_threads(1)
+    # [2026-11-04 事后修正] 建模型前必须显式 seed：train_one_fold 只在内部 manual_seed，
+    # 那是在 ContextMLP 构造之后，初始权重因此取自进程全局 RNG 状态 —— 本臂在 11-04 的
+    # 报告值是一次未受控的 init 抽样（实测同一 seed 重复跑 B2v2 的 pooled_rank 摆动 ±0.05，
+    # 而 LR 臂逐位可复现）。此处补种后 B2v2 才可复现。已发布数字不重算，见
+    # results/reports/summary_5fold_20261104.md 的勘误说明。
+    torch.manual_seed(seed)
     mc, tc = data["cfg"]["model"], data["cfg"]["training"]
     model = ContextMLP(in_dim=Z.shape[1], hidden=mc["hidden"], dropout=mc["dropout"])
     train_one_fold(model, Z[tr], y[tr], Z[va], y[va], seed=seed,
@@ -380,6 +386,10 @@ def main() -> int:
         "perm_redraws_total": sum(p["redraws"] for p in perms),
         "n_valid_events": len(data["ids"]), "n_subset": int(data["subset_mask"].sum()),
         "folds_dir": REPEATS_DIR.relative_to(PROJECT_ROOT).as_posix(),
+        # 下游脚本（eval_random_split 的前置断言）据此决定 MLP 臂能否逐位对照
+        "determinism": {"mlp_init_seeded": True,
+                        "note": "2026-11-04 修正：MLP 臂建模型前显式 manual_seed（此前 init 取自"
+                                "进程全局 RNG，逐位不可复现）。本字段为 True 的输出才可逐位复现。"},
         "arms_spec": ARMS, "comparisons_spec": COMPARISONS,
         **v,
         "per_seed_table": table.relative_to(PROJECT_ROOT).as_posix(),
