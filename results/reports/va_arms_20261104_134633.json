@@ -1,0 +1,203 @@
+{
+  "created_at": "2026-11-04T13:46:33",
+  "purpose": "假设 1（8 类空间与场景错配，紧张=高 arousal/负 valence）的 VA-MTL 臂检验",
+  "predictions": {
+    "P1": "VA2 臂 > chance 且方向 = arousal 正/valence 负系数（紧张→miss）",
+    "P2": "MTL embedding ≥ 同架构 8 类 embedding（vgaf）与 ImageNet（表征空间适配）",
+    "P3": "VA 与 8 类概率的相关符合紧张读数（辅助诊断）"
+  },
+  "C_emb": 0.01,
+  "C_grid_va2": [
+    0.01,
+    0.1,
+    1.0
+  ],
+  "seed": 2026,
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "ba2018cfdf9ecacc"
+  },
+  "n_valid_events": 385,
+  "arms": [
+    {
+      "arm": "MTL-emb1280 (enet_b0_va)",
+      "cache": "enet_b0_8_va_mtl",
+      "key": "embedding",
+      "C": 0.01,
+      "fold_mean": 0.5383,
+      "fold_mean_se": 0.0132,
+      "n_folds_gt_half": 4,
+      "n_folds": 5,
+      "pooled_rank": 0.538
+    },
+    {
+      "arm": "MTL-emb512 (mbf_va)",
+      "cache": "mbf_va_mtl",
+      "key": "embedding",
+      "C": 0.01,
+      "fold_mean": 0.4927,
+      "fold_mean_se": 0.0287,
+      "n_folds_gt_half": 3,
+      "n_folds": 5,
+      "pooled_rank": 0.4978
+    },
+    {
+      "arm": "MTL-emb768 (mobilevit_va)",
+      "cache": "mobilevit_va_mtl",
+      "key": "embedding",
+      "C": 0.01,
+      "fold_mean": 0.5057,
+      "fold_mean_se": 0.0208,
+      "n_folds_gt_half": 3,
+      "n_folds": 5,
+      "pooled_rank": 0.4999
+    },
+    {
+      "arm": "8cls-emb1280 (vgaf, 对照)",
+      "cache": "enet_b0_8_best_vgaf",
+      "key": "embedding",
+      "C": 0.01,
+      "fold_mean": 0.4775,
+      "fold_mean_se": 0.0244,
+      "n_folds_gt_half": 1,
+      "n_folds": 5,
+      "pooled_rank": 0.4848
+    },
+    {
+      "arm": "ImageNet-emb1280 (对照)",
+      "cache": "imagenet_b0",
+      "key": "embedding",
+      "C": 0.01,
+      "fold_mean": 0.5023,
+      "fold_mean_se": 0.0234,
+      "n_folds_gt_half": 1,
+      "n_folds": 5,
+      "pooled_rank": 0.4942
+    },
+    {
+      "arm": "VA2 (enet_b0_va, C=0.01)",
+      "cache": "enet_b0_8_va_mtl",
+      "key": "va",
+      "C": 0.01,
+      "fold_mean": 0.4261,
+      "fold_mean_se": 0.0337,
+      "n_folds_gt_half": 1,
+      "n_folds": 5,
+      "pooled_rank": 0.4258
+    },
+    {
+      "arm": "VA2 (mbf_va, C=0.01)",
+      "cache": "mbf_va_mtl",
+      "key": "va",
+      "C": 0.01,
+      "fold_mean": 0.5529,
+      "fold_mean_se": 0.0179,
+      "n_folds_gt_half": 4,
+      "n_folds": 5,
+      "pooled_rank": 0.5542
+    },
+    {
+      "arm": "VA2 (mobilevit_va, C=0.01)",
+      "cache": "mobilevit_va_mtl",
+      "key": "va",
+      "C": 0.01,
+      "fold_mean": 0.5521,
+      "fold_mean_se": 0.0139,
+      "n_folds_gt_half": 5,
+      "n_folds": 5,
+      "pooled_rank": 0.5541
+    },
+    {
+      "arm": "VA2 (enet_b0_va, C=0.1)",
+      "cache": "enet_b0_8_va_mtl",
+      "key": "va",
+      "C": 0.1,
+      "fold_mean": 0.4297,
+      "fold_mean_se": 0.0295,
+      "n_folds_gt_half": 1,
+      "n_folds": 5,
+      "pooled_rank": 0.4299
+    },
+    {
+      "arm": "VA2 (mbf_va, C=0.1)",
+      "cache": "mbf_va_mtl",
+      "key": "va",
+      "C": 0.1,
+      "fold_mean": 0.5549,
+      "fold_mean_se": 0.0201,
+      "n_folds_gt_half": 4,
+      "n_folds": 5,
+      "pooled_rank": 0.5553
+    },
+    {
+      "arm": "VA2 (mobilevit_va, C=0.1)",
+      "cache": "mobilevit_va_mtl",
+      "key": "va",
+      "C": 0.1,
+      "fold_mean": 0.5451,
+      "fold_mean_se": 0.0111,
+      "n_folds_gt_half": 5,
+      "n_folds": 5,
+      "pooled_rank": 0.5467
+    },
+    {
+      "arm": "VA2 (enet_b0_va, C=1.0)",
+      "cache": "enet_b0_8_va_mtl",
+      "key": "va",
+      "C": 1.0,
+      "fold_mean": 0.4325,
+      "fold_mean_se": 0.0282,
+      "n_folds_gt_half": 1,
+      "n_folds": 5,
+      "pooled_rank": 0.433
+    },
+    {
+      "arm": "VA2 (mbf_va, C=1.0)",
+      "cache": "mbf_va_mtl",
+      "key": "va",
+      "C": 1.0,
+      "fold_mean": 0.5535,
+      "fold_mean_se": 0.0205,
+      "n_folds_gt_half": 4,
+      "n_folds": 5,
+      "pooled_rank": 0.5536
+    },
+    {
+      "arm": "VA2 (mobilevit_va, C=1.0)",
+      "cache": "mobilevit_va_mtl",
+      "key": "va",
+      "C": 1.0,
+      "fold_mean": 0.5415,
+      "fold_mean_se": 0.0118,
+      "n_folds_gt_half": 5,
+      "n_folds": 5,
+      "pooled_rank": 0.5432
+    }
+  ],
+  "va_descriptive": {
+    "valence_only_global_auroc": 0.5082,
+    "arousal_only_global_auroc": 0.4739,
+    "valence_goal_mean": -0.3257,
+    "valence_miss_mean": -0.3269,
+    "arousal_goal_mean": 0.2183,
+    "arousal_miss_mean": 0.2388
+  },
+  "paired_fold_auroc": {
+    "mtl_minus_8cls": {
+      "mean": 0.0607,
+      "n_pos": 5,
+      "n": 5
+    },
+    "mtl_minus_imagenet": {
+      "mean": 0.036,
+      "n_pos": 4,
+      "n": 5
+    }
+  },
+  "notes": [
+    "fold_mean 的零假设不是 0.5（见 oof_stats 报告），判读以 pooled_rank 为主、fold_mean 为辅",
+    "VA2 是 2 维投影，bottleneck 效应会抬 fold_mean——与随机 2 维投影 p95(~0.55) 对照判读",
+    "MTL-emb 与 8cls-emb 同架构同输入，唯一差别是微调目标含 VA——最干净的表征空间对比"
+  ],
+  "table_path": "results/tables/va_arms_20261104_134633.csv"
+}

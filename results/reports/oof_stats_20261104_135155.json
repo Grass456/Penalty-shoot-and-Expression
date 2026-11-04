@@ -1,0 +1,532 @@
+{
+  "created_at": "2026-11-04T13:51:55",
+  "purpose": "OOF 聚合统计量诊断：fold_mean 与 pooled 的差异、各统计量的置换零分布与 p 值",
+  "n_perm": 1000,
+  "seed": 2026,
+  "n_valid_events": 385,
+  "recommended_statistic": "pooled_rank",
+  "why": [
+    "fold_mean 的零假设不是 0.5：单折 6-10 样本的 AUROC 在置换下期望偏离 0.5，须与其零分布比较",
+    "pooled_raw 受折间分数尺度不一致影响（各折标准化与系数不同）",
+    "pooled_rank 折内转秩，折间尺度无关且保留全部折内排序信息"
+  ],
+  "arms": {
+    "context_v2_lr": {
+      "C": 1.0,
+      "stats": {
+        "fold_mean": 0.5164328474006332,
+        "fold_mean_std": 0.05229342955234764,
+        "fold_mean_se": 0.023386332651129143,
+        "n_folds_gt_half": 3,
+        "n_folds": 5,
+        "pooled_raw": 0.5156155449472197,
+        "pooled_rank": 0.5194479930074631,
+        "pooled_z": 0.5203220601089222
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.4984,
+          "null_std": 0.0328,
+          "null_p95": 0.5534,
+          "observed": 0.5164,
+          "p_right_tail": 0.287,
+          "z_vs_null": 0.55
+        },
+        "pooled_raw": {
+          "null_mean": 0.4994,
+          "null_std": 0.0312,
+          "null_p95": 0.5525,
+          "observed": 0.5156,
+          "p_right_tail": 0.295,
+          "z_vs_null": 0.52
+        },
+        "pooled_rank": {
+          "null_mean": 0.4985,
+          "null_std": 0.0322,
+          "null_p95": 0.5503,
+          "observed": 0.5194,
+          "p_right_tail": 0.246,
+          "z_vs_null": 0.65
+        },
+        "pooled_z": {
+          "null_mean": 0.5005,
+          "null_std": 0.0319,
+          "null_p95": 0.5531,
+          "observed": 0.5203,
+          "p_right_tail": 0.259,
+          "z_vs_null": 0.62
+        }
+      }
+    },
+    "enet_b0_8_best_vgaf|emb": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.4775314232047445,
+        "fold_mean_std": 0.05455944598036405,
+        "fold_mean_se": 0.024399726005364334,
+        "n_folds_gt_half": 1,
+        "n_folds": 5,
+        "pooled_raw": 0.48016540038996847,
+        "pooled_rank": 0.4848382975862301,
+        "pooled_z": 0.48171182680024205
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.5017,
+          "null_std": 0.0342,
+          "null_p95": 0.5593,
+          "observed": 0.4775,
+          "p_right_tail": 0.754,
+          "z_vs_null": -0.71
+        },
+        "pooled_raw": {
+          "null_mean": 0.4969,
+          "null_std": 0.0326,
+          "null_p95": 0.5506,
+          "observed": 0.4802,
+          "p_right_tail": 0.686,
+          "z_vs_null": -0.51
+        },
+        "pooled_rank": {
+          "null_mean": 0.5012,
+          "null_std": 0.033,
+          "null_p95": 0.5565,
+          "observed": 0.4848,
+          "p_right_tail": 0.682,
+          "z_vs_null": -0.5
+        },
+        "pooled_z": {
+          "null_mean": 0.5011,
+          "null_std": 0.033,
+          "null_p95": 0.5559,
+          "observed": 0.4817,
+          "p_right_tail": 0.711,
+          "z_vs_null": -0.59
+        }
+      }
+    },
+    "enet_b0_8_best_vgaf|emo": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.49844312916363726,
+        "fold_mean_std": 0.053783821002569177,
+        "fold_mean_se": 0.024052855970285114,
+        "n_folds_gt_half": 2,
+        "n_folds": 5,
+        "pooled_raw": 0.4634908895313655,
+        "pooled_rank": 0.4895448127479325,
+        "pooled_z": 0.49482283332212734
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.5004,
+          "null_std": 0.0349,
+          "null_p95": 0.5588,
+          "observed": 0.4984,
+          "p_right_tail": 0.514,
+          "z_vs_null": -0.06
+        },
+        "pooled_raw": {
+          "null_mean": 0.4769,
+          "null_std": 0.0276,
+          "null_p95": 0.5247,
+          "observed": 0.4635,
+          "p_right_tail": 0.683,
+          "z_vs_null": -0.49
+        },
+        "pooled_rank": {
+          "null_mean": 0.5003,
+          "null_std": 0.0335,
+          "null_p95": 0.5564,
+          "observed": 0.4895,
+          "p_right_tail": 0.617,
+          "z_vs_null": -0.32
+        },
+        "pooled_z": {
+          "null_mean": 0.4997,
+          "null_std": 0.0332,
+          "null_p95": 0.5561,
+          "observed": 0.4948,
+          "p_right_tail": 0.554,
+          "z_vs_null": -0.15
+        }
+      }
+    },
+    "enet_b0_8_best_afew|emb": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.5067356028726265,
+        "fold_mean_std": 0.1354323421998113,
+        "fold_mean_se": 0.060567184702158286,
+        "n_folds_gt_half": 1,
+        "n_folds": 5,
+        "pooled_raw": 0.4773751092583877,
+        "pooled_rank": 0.4846870167417468,
+        "pooled_z": 0.48487191555167086
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.5002,
+          "null_std": 0.0326,
+          "null_p95": 0.5534,
+          "observed": 0.5067,
+          "p_right_tail": 0.416,
+          "z_vs_null": 0.2
+        },
+        "pooled_raw": {
+          "null_mean": 0.4932,
+          "null_std": 0.0305,
+          "null_p95": 0.5432,
+          "observed": 0.4774,
+          "p_right_tail": 0.697,
+          "z_vs_null": -0.52
+        },
+        "pooled_rank": {
+          "null_mean": 0.5003,
+          "null_std": 0.0319,
+          "null_p95": 0.5527,
+          "observed": 0.4847,
+          "p_right_tail": 0.688,
+          "z_vs_null": -0.49
+        },
+        "pooled_z": {
+          "null_mean": 0.5005,
+          "null_std": 0.0318,
+          "null_p95": 0.553,
+          "observed": 0.4849,
+          "p_right_tail": 0.682,
+          "z_vs_null": -0.49
+        }
+      }
+    },
+    "enet_b0_8_best_afew|emo": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.5094423090521094,
+        "fold_mean_std": 0.07146411138974913,
+        "fold_mean_se": 0.03195972220381921,
+        "n_folds_gt_half": 1,
+        "n_folds": 5,
+        "pooled_raw": 0.4767699858804545,
+        "pooled_rank": 0.4974954615746655,
+        "pooled_z": 0.49586499025079006
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.4991,
+          "null_std": 0.0355,
+          "null_p95": 0.5547,
+          "observed": 0.5094,
+          "p_right_tail": 0.392,
+          "z_vs_null": 0.29
+        },
+        "pooled_raw": {
+          "null_mean": 0.4828,
+          "null_std": 0.0311,
+          "null_p95": 0.534,
+          "observed": 0.4768,
+          "p_right_tail": 0.572,
+          "z_vs_null": -0.19
+        },
+        "pooled_rank": {
+          "null_mean": 0.499,
+          "null_std": 0.0344,
+          "null_p95": 0.557,
+          "observed": 0.4975,
+          "p_right_tail": 0.51,
+          "z_vs_null": -0.04
+        },
+        "pooled_z": {
+          "null_mean": 0.4994,
+          "null_std": 0.0347,
+          "null_p95": 0.5574,
+          "observed": 0.4959,
+          "p_right_tail": 0.535,
+          "z_vs_null": -0.1
+        }
+      }
+    },
+    "enet_b2_8|emb": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.474142614191616,
+        "fold_mean_std": 0.04915178809072558,
+        "fold_mean_se": 0.0219813478773054,
+        "n_folds_gt_half": 1,
+        "n_folds": 5,
+        "pooled_raw": 0.4748873798157735,
+        "pooled_rank": 0.47418140254151814,
+        "pooled_z": 0.47518994150474014
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.5018,
+          "null_std": 0.0337,
+          "null_p95": 0.5578,
+          "observed": 0.4741,
+          "p_right_tail": 0.789,
+          "z_vs_null": -0.82
+        },
+        "pooled_raw": {
+          "null_mean": 0.5006,
+          "null_std": 0.0313,
+          "null_p95": 0.5513,
+          "observed": 0.4749,
+          "p_right_tail": 0.793,
+          "z_vs_null": -0.82
+        },
+        "pooled_rank": {
+          "null_mean": 0.5016,
+          "null_std": 0.0327,
+          "null_p95": 0.5537,
+          "observed": 0.4742,
+          "p_right_tail": 0.798,
+          "z_vs_null": -0.84
+        },
+        "pooled_z": {
+          "null_mean": 0.5017,
+          "null_std": 0.0324,
+          "null_p95": 0.5519,
+          "observed": 0.4752,
+          "p_right_tail": 0.798,
+          "z_vs_null": -0.82
+        }
+      }
+    },
+    "enet_b2_8|emo": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.5097482623244873,
+        "fold_mean_std": 0.06687867793649956,
+        "fold_mean_se": 0.029909054022265673,
+        "n_folds_gt_half": 3,
+        "n_folds": 5,
+        "pooled_raw": 0.49283937336112416,
+        "pooled_rank": 0.5022187857190883,
+        "pooled_z": 0.5067908290190277
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.4998,
+          "null_std": 0.0319,
+          "null_p95": 0.5523,
+          "observed": 0.5097,
+          "p_right_tail": 0.386,
+          "z_vs_null": 0.31
+        },
+        "pooled_raw": {
+          "null_mean": 0.4864,
+          "null_std": 0.0275,
+          "null_p95": 0.5301,
+          "observed": 0.4928,
+          "p_right_tail": 0.411,
+          "z_vs_null": 0.24
+        },
+        "pooled_rank": {
+          "null_mean": 0.4997,
+          "null_std": 0.031,
+          "null_p95": 0.5514,
+          "observed": 0.5022,
+          "p_right_tail": 0.482,
+          "z_vs_null": 0.08
+        },
+        "pooled_z": {
+          "null_mean": 0.5,
+          "null_std": 0.0309,
+          "null_p95": 0.5513,
+          "observed": 0.5068,
+          "p_right_tail": 0.428,
+          "z_vs_null": 0.22
+        }
+      }
+    },
+    "enet_b2_7|emb": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.5053053957536717,
+        "fold_mean_std": 0.08312348449186995,
+        "fold_mean_se": 0.03717395237009415,
+        "n_folds_gt_half": 2,
+        "n_folds": 5,
+        "pooled_raw": 0.47932495125395014,
+        "pooled_rank": 0.49075505950379883,
+        "pooled_z": 0.4904188798493916
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.5001,
+          "null_std": 0.0336,
+          "null_p95": 0.557,
+          "observed": 0.5053,
+          "p_right_tail": 0.435,
+          "z_vs_null": 0.16
+        },
+        "pooled_raw": {
+          "null_mean": 0.4942,
+          "null_std": 0.0319,
+          "null_p95": 0.5471,
+          "observed": 0.4793,
+          "p_right_tail": 0.674,
+          "z_vs_null": -0.47
+        },
+        "pooled_rank": {
+          "null_mean": 0.5,
+          "null_std": 0.0326,
+          "null_p95": 0.5553,
+          "observed": 0.4908,
+          "p_right_tail": 0.612,
+          "z_vs_null": -0.28
+        },
+        "pooled_z": {
+          "null_mean": 0.5004,
+          "null_std": 0.0327,
+          "null_p95": 0.5552,
+          "observed": 0.4904,
+          "p_right_tail": 0.625,
+          "z_vs_null": -0.31
+        }
+      }
+    },
+    "enet_b2_7|emo": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.53452406244693,
+        "fold_mean_std": 0.06994618173271985,
+        "fold_mean_se": 0.03128088342418312,
+        "n_folds_gt_half": 2,
+        "n_folds": 5,
+        "pooled_raw": 0.5020506958918846,
+        "pooled_rank": 0.5287601694345458,
+        "pooled_z": 0.5280373831775702
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.5011,
+          "null_std": 0.0341,
+          "null_p95": 0.5589,
+          "observed": 0.5345,
+          "p_right_tail": 0.162,
+          "z_vs_null": 0.98
+        },
+        "pooled_raw": {
+          "null_mean": 0.4841,
+          "null_std": 0.0294,
+          "null_p95": 0.5363,
+          "observed": 0.5021,
+          "p_right_tail": 0.263,
+          "z_vs_null": 0.61
+        },
+        "pooled_rank": {
+          "null_mean": 0.5009,
+          "null_std": 0.0329,
+          "null_p95": 0.5577,
+          "observed": 0.5288,
+          "p_right_tail": 0.189,
+          "z_vs_null": 0.85
+        },
+        "pooled_z": {
+          "null_mean": 0.5004,
+          "null_std": 0.033,
+          "null_p95": 0.5592,
+          "observed": 0.528,
+          "p_right_tail": 0.193,
+          "z_vs_null": 0.84
+        }
+      }
+    },
+    "imagenet_b0|emb": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.5022744055702313,
+        "fold_mean_std": 0.05223673682497973,
+        "fold_mean_se": 0.02336097889268424,
+        "n_folds_gt_half": 1,
+        "n_folds": 5,
+        "pooled_raw": 0.4889396893699994,
+        "pooled_rank": 0.49418409197875346,
+        "pooled_z": 0.4947555973912459
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.5008,
+          "null_std": 0.033,
+          "null_p95": 0.5538,
+          "observed": 0.5023,
+          "p_right_tail": 0.476,
+          "z_vs_null": 0.04
+        },
+        "pooled_raw": {
+          "null_mean": 0.4917,
+          "null_std": 0.0311,
+          "null_p95": 0.5416,
+          "observed": 0.4889,
+          "p_right_tail": 0.529,
+          "z_vs_null": -0.09
+        },
+        "pooled_rank": {
+          "null_mean": 0.5008,
+          "null_std": 0.0315,
+          "null_p95": 0.5512,
+          "observed": 0.4942,
+          "p_right_tail": 0.569,
+          "z_vs_null": -0.21
+        },
+        "pooled_z": {
+          "null_mean": 0.5006,
+          "null_std": 0.0317,
+          "null_p95": 0.5529,
+          "observed": 0.4948,
+          "p_right_tail": 0.566,
+          "z_vs_null": -0.19
+        }
+      }
+    },
+    "fused_v2|ctx+emb": {
+      "C": 0.01,
+      "stats": {
+        "fold_mean": 0.4776132164870822,
+        "fold_mean_std": 0.05200983148307052,
+        "fold_mean_se": 0.023259503738890876,
+        "n_folds_gt_half": 2,
+        "n_folds": 5,
+        "pooled_raw": 0.47959389497747595,
+        "pooled_rank": 0.48477106165534867,
+        "pooled_z": 0.4816782088348013
+      },
+      "null_and_p": {
+        "fold_mean": {
+          "null_mean": 0.4983,
+          "null_std": 0.0338,
+          "null_p95": 0.5537,
+          "observed": 0.4776,
+          "p_right_tail": 0.726,
+          "z_vs_null": -0.61
+        },
+        "pooled_raw": {
+          "null_mean": 0.4949,
+          "null_std": 0.0326,
+          "null_p95": 0.5496,
+          "observed": 0.4796,
+          "p_right_tail": 0.68,
+          "z_vs_null": -0.47
+        },
+        "pooled_rank": {
+          "null_mean": 0.4987,
+          "null_std": 0.0329,
+          "null_p95": 0.5536,
+          "observed": 0.4848,
+          "p_right_tail": 0.67,
+          "z_vs_null": -0.42
+        },
+        "pooled_z": {
+          "null_mean": 0.4984,
+          "null_std": 0.0331,
+          "null_p95": 0.5537,
+          "observed": 0.4817,
+          "p_right_tail": 0.69,
+          "z_vs_null": -0.5
+        }
+      }
+    }
+  }
+}

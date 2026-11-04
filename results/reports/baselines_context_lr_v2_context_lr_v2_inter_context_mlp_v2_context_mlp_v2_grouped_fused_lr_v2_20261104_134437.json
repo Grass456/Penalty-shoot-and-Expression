@@ -1,0 +1,461 @@
+{
+  "created_at": "2026-11-04T13:44:37",
+  "models": [
+    "context_lr_v2",
+    "context_lr_v2_inter",
+    "context_mlp_v2",
+    "context_mlp_v2_grouped",
+    "fused_lr_v2"
+  ],
+  "seed": 2026,
+  "config": {
+    "features": {
+      "context_v2": [
+        "sudden_death",
+        "is_trailing",
+        "kick_order_second",
+        "score_diff",
+        "has_history",
+        "history_rate"
+      ],
+      "history_alpha": 5.0,
+      "score_diff_clip": 2
+    },
+    "model": {
+      "hidden": 16,
+      "dropout": 0.3,
+      "grouped": {
+        "hidden_situ": 2,
+        "hidden_hist": 1
+      }
+    },
+    "training": {
+      "seed": 2026,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "max_epochs": 200,
+      "patience": 30,
+      "batch_size": null
+    }
+  },
+  "folds": {
+    "path": "folds/match_disjoint.json",
+    "sha256_16": "ba2018cfdf9ecacc"
+  },
+  "events_fingerprint": "07d41a0c661e176f",
+  "n_valid_events": 385,
+  "context_features": [
+    "round_number",
+    "team_score_before",
+    "opponent_score_before",
+    "kicks_taken_before",
+    "history_rate",
+    "history_missing"
+  ],
+  "beta_smoothing": {
+    "alpha": 1.0,
+    "beta": 1.0
+  },
+  "fer_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "n_train~96 vs d=1280，固定强 L2；val 单场不可靠故不做逐折 C 扫描"
+  },
+  "fused_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 同一 C 施加于全部 1286 维；M3 判读为同正则强度下融合是否不低于单臂，不做融合超参调优"
+  },
+  "fused_lr_v2": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "context 基座换 v2 六维（与 B1v2 主臂一致），正则/协议与 M3 完全相同，使 M3v2-M3 只归因于 context 基座"
+  },
+  "context_v2": {
+    "history_alpha": "由配置",
+    "note": "B1v2/M3v2 的 p̄（收缩目标）逐折只由 train 估计（硬约束 5）"
+  },
+  "imagenet_lr": {
+    "C": 0.01,
+    "max_iter": 5000,
+    "rationale": "与 M1 完全同协议，仅特征来源不同（ImageNet vs FER 预训练）"
+  },
+  "aggregates": [
+    {
+      "model": "context_lr_v2",
+      "split": "train",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.6118,
+        "std": 0.019,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7824,
+        "std": 0.009,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5008,
+        "std": 0.0017,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.1969,
+        "std": 0.0033,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_lr_v2",
+      "split": "val",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.598,
+        "std": 0.0541,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.801,
+        "std": 0.0472,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5057,
+        "std": 0.0114,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.1906,
+        "std": 0.0155,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_lr_v2",
+      "split": "test",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5164,
+        "std": 0.0523,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.746,
+        "std": 0.0345,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2067,
+        "std": 0.0136,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_lr_v2_inter",
+      "split": "train",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.6141,
+        "std": 0.0206,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7903,
+        "std": 0.0059,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5008,
+        "std": 0.0017,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.1962,
+        "std": 0.0028,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_lr_v2_inter",
+      "split": "val",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.603,
+        "std": 0.0416,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.803,
+        "std": 0.035,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5057,
+        "std": 0.0114,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.1894,
+        "std": 0.0142,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_lr_v2_inter",
+      "split": "test",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5217,
+        "std": 0.0582,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7519,
+        "std": 0.0244,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.207,
+        "std": 0.0115,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_mlp_v2",
+      "split": "train",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5214,
+        "std": 0.0573,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7461,
+        "std": 0.0362,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5045,
+        "std": 0.0098,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2453,
+        "std": 0.0391,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_mlp_v2",
+      "split": "val",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5445,
+        "std": 0.0557,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7743,
+        "std": 0.059,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5184,
+        "std": 0.0205,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2478,
+        "std": 0.0476,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_mlp_v2",
+      "split": "test",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5526,
+        "std": 0.0784,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7579,
+        "std": 0.0517,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5354,
+        "std": 0.0781,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2405,
+        "std": 0.0353,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_mlp_v2_grouped",
+      "split": "train",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5235,
+        "std": 0.0325,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7394,
+        "std": 0.0253,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5115,
+        "std": 0.0288,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2344,
+        "std": 0.018,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_mlp_v2_grouped",
+      "split": "val",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.5521,
+        "std": 0.1092,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7691,
+        "std": 0.0818,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5084,
+        "std": 0.0168,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2266,
+        "std": 0.0286,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "context_mlp_v2_grouped",
+      "split": "test",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.4711,
+        "std": 0.0773,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7066,
+        "std": 0.0265,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5017,
+        "std": 0.0108,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2356,
+        "std": 0.0222,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "fused_lr_v2",
+      "split": "train",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.999,
+        "std": 0.0009,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.9996,
+        "std": 0.0003,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.9253,
+        "std": 0.0062,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.0615,
+        "std": 0.0021,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "fused_lr_v2",
+      "split": "val",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.4367,
+        "std": 0.0339,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7176,
+        "std": 0.0615,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.4563,
+        "std": 0.0321,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2494,
+        "std": 0.0174,
+        "n_valid_folds": 5
+      }
+    },
+    {
+      "model": "fused_lr_v2",
+      "split": "test",
+      "n_folds": 5,
+      "auroc": {
+        "mean": 0.4776,
+        "std": 0.052,
+        "n_valid_folds": 5
+      },
+      "auprc": {
+        "mean": 0.7239,
+        "std": 0.0455,
+        "n_valid_folds": 5
+      },
+      "balanced_acc": {
+        "mean": 0.5017,
+        "std": 0.042,
+        "n_valid_folds": 5
+      },
+      "brier": {
+        "mean": 0.2494,
+        "std": 0.0226,
+        "n_valid_folds": 5
+      }
+    }
+  ],
+  "per_fold_path": "results/tables/baselines_context_lr_v2_context_lr_v2_inter_context_mlp_v2_context_mlp_v2_grouped_fused_lr_v2_20261104_134437.csv"
+}

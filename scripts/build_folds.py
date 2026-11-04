@@ -1,18 +1,22 @@
 #!/usr/bin/env python
-"""生成 match-disjoint folds（pilot 阶段：leave-one-match-out）。
+"""生成 match-disjoint folds（正式阶段：5 折 StratifiedGroupKFold + 内层 val）。
 
 用法（项目根目录）:
     python scripts/build_folds.py             # 生成/覆盖 folds/match_disjoint.json
     python scripts/build_folds.py --validate  # 校验现有 folds 与 events.csv 是否一致
 
-划分设计（2026-10-08 定，pilot 14 场）:
+划分设计（2026-11-04 定，40 场为最终数据规模，plan.md §10.2）:
     - group = match_id（硬约束 4）：同一场点球大战的所有罚球只出现在一个集合；
-    - test  = 1 场完整点球大战（leave-one-match-out，共 14 折）；
-    - val   = 循环中的下一场 matches[(test_idx + 1) % n]，完全确定性、无随机种子，
-              每场比赛在全部折中恰好担任一次 val；
-    - train = 其余 12 场；
+    - test  = 外层 StratifiedGroupKFold(5, shuffle, seed) 的一折（约 8 场），
+              按 result 分层，每场比赛恰好担任一次 test；
+    - val   = 在该折其余 32 场上再跑一次 StratifiedGroupKFold(5, 同 seed)，
+              取第一折（约 6-7 场）作 early stopping / 选模型用（硬约束 6）；
+    - train = 其余约 25-26 场；
     - 有效样本 = exclusion_reason 为空且 face_path 非空（与特征缓存口径一致）；
-    - test 折必须 goal/miss 两类齐全，否则该折 AUROC 不可计算——生成时强制中止。
+    - test / val 折必须 goal/miss 两类齐全，否则生成时中止。
+
+旧协议（40 折 LOMO，val=循环下一场）已存档为 folds/match_disjoint_lomo40.json：
+单场 val（6-10 样本）无法选超参（C 扫描已证实），微调需要可用的 early stopping。
 
 folds 文件被所有模型共享（硬约束 4）；early stopping 与选模型只用 val（硬约束 6）。
 划分完全由 events.csv 决定：events.csv 变更后必须重新生成本文件
@@ -27,14 +31,19 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from sklearn.model_selection import StratifiedGroupKFold
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 EVENTS_PATH = PROJECT_ROOT / "data" / "metadata" / "events.csv"
 MATCHES_PATH = PROJECT_ROOT / "data" / "metadata" / "matches.csv"
 FOLDS_PATH = PROJECT_ROOT / "folds" / "match_disjoint.json"
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+N_SPLITS = 5        # 外层 test 折数（plan.md §10.2）
+N_INNER = 5         # 内层：其余比赛按 1/N_INNER 切出 val
+SPLIT_SEED = 2026
 
 
 # ---------------------------------------------------------------- 载入与口径
@@ -77,41 +86,51 @@ def stats_for(ids: list[str], valid: pd.DataFrame) -> dict:
 
 # ---------------------------------------------------------------- 划分计算
 
-def compute_folds(valid: pd.DataFrame) -> dict:
-    """确定性 LOMO：test=1 场，val=循环下一场，train=其余 12 场。"""
+def _sgkf_matches(valid: pd.DataFrame, n_splits: int, seed: int) -> list[list[str]]:
+    """对 valid 跑 StratifiedGroupKFold（y=result，group=match_id），返回每折的 match 列表。
+
+    输入先按 event_id 排序，保证结果只由 events.csv 内容 + seed 决定。
+    """
+    v = valid.sort_values("event_id")
+    y = (v["result"] == "goal").astype(int).to_numpy()
+    groups = v["match_id"].to_numpy()
+    sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=seed)
+    return [sorted(np.unique(groups[te]).tolist()) for _, te in sgkf.split(np.zeros(len(y)), y, groups)]
+
+
+def compute_folds(valid: pd.DataFrame, seed: int = SPLIT_SEED) -> dict:
+    """外层 5 折 test + 内层 val（均为按 match 分组、按 result 分层）。"""
     matches = sorted(valid["match_id"].unique())
     n = len(matches)
-    if n < 3:
-        print(f"比赛数过少（{n}），无法划分 train/val/test", file=sys.stderr)
+    if n < N_SPLITS * 2:
+        print(f"比赛数过少（{n}），无法做 {N_SPLITS} 折 + 内层 val", file=sys.stderr)
         raise SystemExit(1)
     ids_by_match = {
         m: sorted(valid.loc[valid["match_id"] == m, "event_id"].tolist()) for m in matches
     }
 
     folds = []
-    for i, test_m in enumerate(matches):
-        val_m = matches[(i + 1) % n]
-        train_m = [m for m in matches if m != test_m and m != val_m]
+    for i, test_ms in enumerate(_sgkf_matches(valid, N_SPLITS, seed)):
+        rest = valid[~valid["match_id"].isin(test_ms)]
+        val_ms = _sgkf_matches(rest, N_INNER, seed)[0]
+        train_ms = [m for m in matches if m not in test_ms and m not in val_ms]
         ids = {
-            "test": ids_by_match[test_m],
-            "val": ids_by_match[val_m],
-            "train": sorted(e for m in train_m for e in ids_by_match[m]),
+            "test": sorted(e for m in test_ms for e in ids_by_match[m]),
+            "val": sorted(e for m in val_ms for e in ids_by_match[m]),
+            "train": sorted(e for m in train_ms for e in ids_by_match[m]),
         }
         st = {k: stats_for(v, valid) for k, v in ids.items()}
-        # test 缺类则该折 AUROC 不可算，直接中止；val 缺类只警告（early stopping 质量下降）
+        # 多场合并后 test/val 缺类即划分异常，直接中止
         for name in ("test", "val"):
             if st[name]["n_goal"] == 0 or st[name]["n_miss"] == 0:
-                msg = (f"{name} 折 {test_m}: 缺类 "
-                       f"(goal={st[name]['n_goal']}, miss={st[name]['n_miss']})")
-                if name == "test":
-                    print(f"  !! {msg}，AUROC 不可算", file=sys.stderr)
-                    raise SystemExit(1)
-                print(f"  -- {msg}（val 缺类，early stopping 仅供参考）", file=sys.stderr)
+                print(f"  !! fold {i} {name}: 缺类 (goal={st[name]['n_goal']}, "
+                      f"miss={st[name]['n_miss']})", file=sys.stderr)
+                raise SystemExit(1)
         folds.append({
             "fold_id": i,
-            "test_matches": [test_m],
-            "val_matches": [val_m],
-            "train_matches": train_m,
+            "test_matches": test_ms,
+            "val_matches": val_ms,
+            "train_matches": train_ms,
             "test_event_ids": ids["test"],
             "val_event_ids": ids["val"],
             "train_event_ids": ids["train"],
@@ -121,10 +140,14 @@ def compute_folds(valid: pd.DataFrame) -> dict:
     n_excluded = int((~valid_mask_cache).sum()) if valid_mask_cache is not None else None
     doc = {
         "schema_version": SCHEMA_VERSION,
-        "strategy": "leave_one_match_out",
+        "strategy": "stratified_group_kfold",
         "group_key": "match_id",
+        "stratify_key": "result",
+        "n_splits": N_SPLITS,
+        "seed": seed,
         "created_at": datetime.now().isoformat(timespec="seconds"),
-        "val_assignment": "cyclic: val = matches[(test_index + 1) % n_matches]",
+        "val_assignment": f"inner StratifiedGroupKFold({N_INNER}, seed) on non-test matches, first fold",
+        "previous_protocol": "folds/match_disjoint_lomo40.json（40 折 LOMO，2026-11-04 前全部实验所用）",
         "source": {
             "events": EVENTS_PATH.relative_to(PROJECT_ROOT).as_posix(),
             "valid_filter": "exclusion_reason 为空且 face_path 非空",
@@ -221,12 +244,16 @@ def compare_docs(a: dict, b: dict) -> list[str]:
 def print_summary(doc: dict) -> None:
     g = doc["global_stats"]
     print(f"共 {g['n_matches']} 场 / {g['n_valid_events']} 有效样本 "
-          f"(goal {g['n_goal']} / miss {g['n_miss']}, miss 率 {g['miss_rate']:.1%})，{doc['n_folds'] if 'n_folds' in doc else len(doc['folds'])} 折 LOMO\n")
-    print(f"{'fold':>4}  {'test':>5} {'n(g/m)':>8}  {'val':>5}  {'train n(g/m)':>12}")
+          f"(goal {g['n_goal']} / miss {g['n_miss']}, miss 率 {g['miss_rate']:.1%})，"
+          f"{len(doc['folds'])} 折 {doc['strategy']} (seed={doc.get('seed')})\n")
+    print(f"{'fold':>4}  {'split':>5} {'场':>3} {'n':>4} {'goal/miss':>10} {'miss率':>7}")
     for f in doc["folds"]:
-        t, v, r = f["stats"]["test"], f["stats"]["val"], f["stats"]["train"]
-        print(f"{f['fold_id']:>4}  {f['test_matches'][0]:>5} {t['n_goal']:>3}/{t['n_miss']:<4} "
-              f"{f['val_matches'][0]:>5}  {r['n_goal']:>4}/{r['n_miss']:<4}  ({r['n_events']})")
+        for s in ("test", "val", "train"):
+            st = f["stats"][s]
+            print(f"{f['fold_id']:>4}  {s:>5} {len(f[f'{s}_matches']):>3} {st['n_events']:>4} "
+                  f"{st['n_goal']:>5}/{st['n_miss']:<4} {st['n_miss'] / st['n_events']:>7.1%}")
+        print(f"{'':>6}test: {','.join(f['test_matches'])}")
+        print(f"{'':>6}val:  {','.join(f['val_matches'])}")
 
 
 def main() -> int:
@@ -259,7 +286,7 @@ def main() -> int:
                 print(f"  !! {p}")
             print("→ 请重新运行 python scripts/build_folds.py 重新生成")
             return 1
-        print(f"folds 与 events.csv 一致（{len(doc['folds'])} 折 LOMO）")
+        print(f"folds 与 events.csv 一致（{len(doc['folds'])} 折 {doc['strategy']}）")
         return 0
 
     problems = check_doc(doc, valid) + check_matches_table(ev, valid)
