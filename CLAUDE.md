@@ -9,15 +9,17 @@
 - **核心问题**：预训练 FER 表征能否在历史点球表现与比赛上下文之外，为点球大战单次罚球结果（Goal/Miss）提供额外预测信号
 - **完整计划书**：[docs/plan.md](docs/plan.md) —— 任何涉及研究设计、数据定义、评估协议的决策都以该文件为权威来源。改动研究设计前先读它。
 
-## 技术栈（计划）
+## 技术栈（已定）
 
-- 语言：Python 3.10+
-- 深度学习：PyTorch（FER encoder、MLP、部分微调）
-- 视频处理：ffmpeg / ffmpeg-python（触球前切片）
-- 人脸检测：待定（候选：MediaPipe / MTCNN / RetinaFace）
-- FER 模型：预训练（待选定 backbone，如 FER+ / DDAMFN / HSE-ResNet）
-- ImageNet 对照：torchvision 预训练 ResNet
-- 评估：scikit-learn（GroupKFold / StratifiedGroupKFold、AUROC、AUPRC、Brier）
+- 语言：Python 3.10+（conda 环境 `penalty-fer`，版本锁定见 requirements.txt）
+- 深度学习：PyTorch（MLP、后续部分微调）
+- 视频处理：OpenCV（本机无 ffmpeg，切片与截帧都走 cv2）
+- 人脸检测：OpenCV YuNet（`models/detection/`）；多帧身份过滤用 SFace
+- FER 模型：EmotiEffLib，主 backbone `enet_b0_8_best_vgaf`（1280 维 embedding + 8 类情绪概率）；
+  对比用 `enet_b0_8_best_afew` / `enet_b2_8` / `enet_b2_7`，以及 3 个 VA-MTL backbone
+- ImageNet 对照：timm `efficientnet_b0`（与主 FER backbone 同骨干）
+- 评估：scikit-learn（StratifiedGroupKFold、AUROC、AUPRC、Brier、Log Loss）；
+  主判读口径为 pooled_rank + 全流程 refit 置换零分布（见 plan.md §11 修订）
 - 元数据：pandas / CSV / Parquet
 - 实验跟踪：建议配置 + checkpoint + 指标落盘到 `results/`，不依赖外部服务
 
@@ -63,33 +65,47 @@ results/reports 报告（可入库）
 
 ## 编码规范
 
-- 代码风格匹配现有文件（当前仓库尚无源码，新建时遵循 PEP 8 + 类型提示）。
+- 代码风格匹配现有文件（PEP 8 + 类型提示；脚本头部 docstring 写用法、协议与输出路径，参照 `scripts/run_baselines.py`）。
+- Windows 下读写 json/csv 一律显式 `encoding="utf-8"`（默认 GBK 会炸）；运行脚本前设 `PYTHONIOENCODING=utf-8`。
 - 配置驱动：模型/数据/训练参数放进 `src/config/*.yaml`，不在脚本里硬编码路径与超参。
 - 可复现：固定并报告随机种子；主实验跑多种子；每次实验保存配置 + checkpoint + 指标。
 - 数据 pipeline 与模型解耦：FER 特征预提取缓存到 `features/`，下游分类器读缓存，避免重复前向。
 - 路径用 `pathlib.Path`；跨平台（Windows bash 环境）注意正斜杠。
 - 中文注释可接受（plan.md 为中文），但函数/变量名用英文。
 
-## 常用命令（待实现）
-
-当前 `src/` 与 `scripts/` 为空，以下为 plan.md 规划的入口，随 Phase 推进实现：
+## 常用命令
 
 ```bash
-python scripts/build_metadata.py        # 构建事件元数据表
-python scripts/extract_clips.py         # 切触球前视频片段
-python scripts/select_face_frames.py    # 选定合格单帧人脸
-python scripts/cache_fer_features.py   # 缓存 FER embedding/情绪概率
-python scripts/run_experiment.py --config src/config/<name>.yaml
-python scripts/evaluate.py --folds folds/match_disjoint.json
+# 数据标注（人工）
+python scripts/marker.py --match m004        # 打特写(f)/触球(空格)时间点
+python scripts/capture_face.py --match m004  # 通看视频，人工截主罚球员触球前人脸
+python scripts/fill_events.py --validate     # 由 result + 踢序推导轮次/比分/突然死亡（--interactive 填写）
+
+# 特征与划分
+python scripts/cache_fer_features.py [--model <backbone>] [--imagenet]  # 单帧特征缓存 → features/fer/<name>/
+python scripts/build_folds.py [--validate]   # 5 折 SGKF + 内层 val → folds/match_disjoint.json
+
+# 实验
+python scripts/run_baselines.py --models majority,context_lr_v2,fer_lr,imagenet_lr,fused_lr_v2 \
+       --config src/config/context_v2.yaml   # 单划分基线（seed 2026）
+python scripts/eval_repeated_splits.py       # 10 seed × 5 折 + 200 次置换（主结论来源）
+python scripts/evaluate_oof_stats.py         # 单划分统计口径 + 置换
 ```
 
-实现脚本时，保持入口与 README "快速开始" 一致。
+events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_folds.py`。下游脚本按 event_id 对齐，发现不一致会报错。
 
-## 当前阶段
+## 当前阶段（2026-11-04）
 
-仓库刚初始化，无任何提交。按 plan.md 第 18、22 节，下一步是 **Phase 0 / Action 1：固定标注规范**（触球时刻定义、单帧选择规则、context 编码、历史表现截断规则、赛事类别映射），随后进入 20 场 Pilot。
+详细进度、假设检验现状和与原计划的偏离见 [docs/plan.md](docs/plan.md) §0；当前全部结论数字见 [results/reports/summary_5fold_20261104.md](results/reports/summary_5fold_20261104.md)。
 
-在用户给出具体编码任务前，不要擅自实现研究逻辑；优先协助固定规范文档或搭建脚手架。
+- **数据已定稿**：40 场 / 385 有效样本，不再扩数据。
+- **划分已定稿**：5 折 StratifiedGroupKFold + 内层 val（`folds/match_disjoint.json` schema v2）。
+  正式结论用重复划分（`folds/repeats/`，seed 2027–2036）。旧 40 折 LOMO 已作废，不要引用其数字。
+- **已完成**：B0–B4、M1、M3 及多项 FER 侧诊断。重复划分下没有任何臂达到显著（B1v2 最接近，p=0.060）。
+- **下一步**：M2 部分微调 → M4（先预注册判读线），再做 A6 random split、A5 context 消融。
+- **待用户决定**：主客场与赛事类别两类 context 是补标还是记为偏离（plan.md §6.6 修订）。
+
+新实验先写预注册判读标准，再跑；结果落盘 `results/`，并把结论并入 summary（见 `results/README.md`），不另建零散报告。
 
 ## 与用户协作
 

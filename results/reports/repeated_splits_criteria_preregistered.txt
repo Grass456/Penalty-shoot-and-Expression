@@ -1,0 +1,47 @@
+# 重复划分判读标准（2026-11-04 预注册，在跑 eval_repeated_splits.py 之前写定）
+#
+# 设计
+#   - 划分：build_folds.compute_folds（5 折 StratifiedGroupKFold + 内层 val），
+#     split seed = 2027..2036 共 10 组。不含 2026：三个"待复查"臂是在 seed 2026 上
+#     看到的，排除它以避免用同一划分确认。注意数据仍是同一批 385 样本，
+#     这不是独立的确认集，只消除了"划分选择"这一层偶然性。
+#   - 模型种子 = split seed（B2v2 MLP 受影响；LR 臂几乎无随机性）。
+#   - 主统计量：pooled_rank（折内转秩后 pool），对 10 个 seed 取均值。
+#   - 零分布：全流程 refit 置换。全局打乱 385 个标签（所有臂、所有 seed 共用同一次打乱），
+#     用打乱后的标签重建 folds（同 seed）并重训全部臂，得到"10 seed 均值 pooled_rank"
+#     的零分布。LR 臂 200 次；B2v2 MLP 臂次数视耗时而定，在报告里注明。
+#     p = (1 + #{null >= obs}) / (1 + n_perm)，单侧。
+#
+# 臂（C 全部事先固定，不按 test 选）
+#   B1v2  context_v2 LR, C=1.0                  （context 主臂）
+#   B2v2  context_v2 MLP, src/config/context_v2.yaml   [待复查 2]
+#   B3    emo_probs LR, C=0.01：vgaf / b2_7
+#   M1    vgaf embedding LR, C=0.01
+#   B4    imagenet_b0 embedding LR, C=0.01
+#   M3v2  context_v2 + vgaf embedding LR, C=0.01
+#   VAemb enet_b0_8_va_mtl embedding LR, C=0.01        [待复查 1]
+#   356 子集（多帧缓存有帧的踢次，folds 按子集收缩）：
+#     single356  vgaf 单帧 embedding LR, C=1.0
+#     multimean  vgaf 多帧均值 embedding LR, C=1.0     [待复查 3]
+#     multiva2   多帧 VA 2 维 LR, C=0.01               （LOMO 反常复查）
+#   C=1.0 用于多帧是因为待复查的就是 seed 2026 上 C=1.0 那个点（已知是 test 上挑的），
+#   这里只检验它能否在其他划分上复现。
+#
+# 判定
+#   臂"有信号"：10-seed 均值 pooled_rank 的置换 p < 0.05。
+#   配对比较"成立"：两条同时满足
+#     (a) 10 个 seed 中 ≥8 个 seed 的 Δpooled_rank > 0；
+#     (b) 被比较的较优臂本身"有信号"。
+#   预注册的配对比较：
+#     M1 − B4            （H2/A2：FER vs ImageNet 预训练）
+#     M3v2 − B1v2        （H6/A4：FER 增量价值）
+#     VAemb − M1         [待复查 1]
+#     B2v2 − B1v2        [待复查 2]
+#     multimean − single356 （C=1.0）[待复查 3]
+#   三个待复查臂只有在上述判定全部满足时才算"复现"；否则在论文里写为
+#   "单一划分上的偏高，重复划分未复现"。
+#
+# 预期（基于已有证据）：全部臂 p > 0.05，三个待复查项均不复现。
+#
+# [2026-11-04 事后勘误，不改变任何判定标准] M1 − B4 对应 plan.md 的 H3/A2（FER vs ImageNet），
+# 上面误写为 H2/A2。plan 的 H2/A1 是 embedding vs 情绪概率，本次未作预注册配对比较。

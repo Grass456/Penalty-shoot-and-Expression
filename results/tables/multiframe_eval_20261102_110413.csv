@@ -1,5 +1,0 @@
-arm_key,fold_mean,fold_mean_se,n_folds_gt_half,n_folds,pooled_rank
-single_356|C=0.1,0.4571,0.041,11,40,0.4412
-multi_mean|C=0.1,0.472,0.0413,16,40,0.485
-multi_median|C=0.1,0.4913,0.0395,17,40,0.4993
-multi_last8|C=0.1,0.4841,0.0418,17,40,0.4992

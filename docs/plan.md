@@ -1,5 +1,59 @@
 # Course Project Plan
 
+## 0. 当前进度（2026-11-04 更新）
+
+> 本节记录实际执行状态，以及与原计划的偏离。下文第 1–24 节保留原始设计；有改动的地方用带日期的"修订"引用块标注。当前全部结论数字以 `results/reports/summary_5fold_20261104.md` 为准。
+
+### 0.1 阶段状态
+
+| 阶段 | 状态 | 说明 |
+|---|---|---|
+| Phase 0 标注规范 | 完成 | 触球时刻双打点（marker.py）、人工截帧（capture_face.py）、history 3 季口径、排除日志 |
+| Phase 1 Pilot | 完成 | 14 场世界杯（计划 20 场），123 次罚球 / 114 个有效人脸 |
+| Phase 2 扩展 | **完成，停在 40 场** | 网上能找到的可用比赛基本收齐，40 场即最终规模（见 §6.1 修订） |
+| Phase 3 单分支基线 | 完成 | B0–B4、M1 |
+| Phase 4 融合与微调 | 部分完成 | M3 完成（阴性）；M2、M4 未开始 |
+| Phase 5 正式评估与消融 | 部分完成 | 5 折 match-disjoint + 10 组重复划分 + 置换检验完成；A1、A2 有结果；A5、A6、A7、A8 未做 |
+| Phase 6 写作 | 未开始 | |
+
+### 0.2 最终数据
+
+- 40 场点球大战，2006–2026 年，全部为 360p 转播；
+- 412 次罚球，其中 385 个有效样本（goal 278 / miss 107，miss 率 27.8%），27 个因 `no_face` 排除；
+- 赛事按 §6.6.5 映射：国际国家队赛事 21 场（世界杯 14、欧洲杯 6、欧国联 1），洲际俱乐部赛事 11 场（欧冠 8、欧联 1、欧协联 1、欧超杯 1），国内杯赛 8 场（足总杯 5、社区盾 3）。
+
+### 0.3 假设检验现状（重复划分，pooled_rank，200 次全流程置换）
+
+| 假设 | 对应比较 | 结果 | 判定 |
+|---|---|---|---|
+| H1 FER 有信号 | M1 vs 零分布 | 0.467，p=0.82 | 不支持 |
+| H2 embedding 优于情绪概率 | M1 vs B3 | M1 0.467，B3 0.485–0.527，两者都无信号 | 不支持 |
+| H3 FER 预训练优于 ImageNet | M1 − B4 | +0.003，6/10 seed，p=0.48 | 不支持 |
+| H4 部分微调有效 | M2 vs M1 | 未做 | — |
+| H5 Context 有效 | B1v2 / B2v2 vs 零分布 | B1v2 0.553，p=0.060；B2v2 0.506，p=0.28 | 未达显著（B1v2 接近阈值） |
+| H6 FER 增量价值 | M3v2 − B1v2 | −0.086，0/10 seed | 不支持（融合一致更差） |
+| H7 随机划分高估 | random vs match-disjoint | 未做 | — |
+
+检测下限：零分布 p95 在 0.55–0.57，即在 385 样本下，pooled_rank 低于约 0.55 的效应测不出来。
+
+### 0.4 与原计划的偏离
+
+1. **数据规模**：40 场，原计划 60–80 场（§6.1）。
+2. **划分协议**：先用 40 折 LOMO，因单场 val 无法选超参而作废；现为 5 折 + 内层 val，每折 test 7–9 场，原计划 12–16 场（§10.2）。
+3. **Context 特征**：主客场与赛事类别两类尚未编码进模型（§6.6），轮次/比分改用 v2 六维编码。
+4. **主统计量**：在 AUROC 的基础上，以 pooled_rank 与置换零分布为主要判读口径（§11）。
+5. **超出计划的探索**：backbone 对比（§19 Could Have）、VA-MTL 连续情绪头、多帧聚合（§19 明确不实现）。多帧只作探索性诊断，不进主结果。
+
+### 0.5 下一步
+
+1. M2 部分微调 → M4，先预注册判读线（M2 − M1、M4 − B1v2）；
+2. A6 / H7：random event split 对照（表 3）；
+3. A5：context 特征组消融（表 4）；先决定主客场、赛事类别是补标还是记为偏离；
+4. A7 高质量人脸子集、player 跨折重复统计（§10.4，需要补回球员标识）；
+5. 写作（Phase 6）。
+
+---
+
 ## 1. 暂定题目
 
 ### 推荐题目
@@ -168,6 +222,11 @@ Random event split 的表现高于 match-disjoint split，因为随机划分可�
 
 最终样本量必须根据实际数据统计报告，不能只报告计划场次数量。
 
+> **2026-11-04 修订（规模定稿）**：阶段一实际为 14 场世界杯（剔除 2000 年前画质过差的比赛，17→14），
+> 123 次罚球 / 114 个有效人脸；matches.csv 记录的单场处理时间约 3 分钟（只有这 14 场有记录）。阶段二扩展到 40 场后，网上可获得的
+> 可用点球大战视频已基本收齐，**40 场为最终规模**（412 次罚球 / 385 有效 / 107 个 miss）。
+> 这属于 §23 第 2 条"在可行的前提下扩展"的不可行情形，论文中按实际规模报告并作为局限披露。
+
 ### 6.2 Pipeline 可行性指标
 
 20 场验证阶段需要记录以下指标：
@@ -301,6 +360,17 @@ Context 分支只包含以下五类信息。
 - 其他。
 
 类别不能划分过细，否则模型会学习具体比赛身份而不是可泛化的赛事特征。类别定义必须在建模前固定。
+
+> **2026-11-04 修订（实际编码）**：模型中实际使用的是 v2 六维 context（`src/config/context_v2.yaml`）：
+> `sudden_death`、`is_trailing`、`kick_order_second`、`score_diff`（截断 ±2）、`has_history`、
+> `history_rate`（收缩到训练集基率 p̄，α=5，只由训练集估计）。`round_number` 因与 `sudden_death`
+> 信息重合被移除；原始比分两列与 `kicks_taken_before` 因共线被移除。
+> **注意：v2 是在看过旧 LOMO 划分的 test 结果后设计的**，论文中须说明。
+>
+> **主客场（类别 2）与赛事类别（类别 5）尚未编码进模型**：events/matches 表没有 `venue_status`
+> 与 `competition_category` 列。赛事可按上面四类映射直接从 `matches.competition` 得到
+> （国家队 21 / 洲际俱乐部 11 / 国内杯 8 场）；主客场需要补标，且决赛与大赛多为中立场，可能接近常数。
+> 待决定：补标并纳入，或记为偏离（影响表 4 的两行）。
 
 ### 6.7 元数据表
 
@@ -531,6 +601,19 @@ Face/context/fusion heads: 1e-3
 - 尽量平衡 Goal/Miss 比例、赛事类别和主客场状态；
 - 所有模型必须使用相同 folds。
 
+> **2026-11-04 修订（实际协议）**：
+> - 10-08 至 11-02 曾使用 40 折 leave-one-match-out（val=下一场）。单场 val 只有 6–10 个样本，
+>   无法选超参或 early stopping，且整场为 test 的折结构制造过假结果（multi_va2 0.287），已作废。
+>   旧划分存档于 `folds/match_disjoint_lomo40.json`。
+> - 现行协议（`scripts/build_folds.py`，`folds/match_disjoint.json` schema v2）：外层 StratifiedGroupKFold(5)，
+>   group=`match_id`，按结果分层，seed=2026；每折 test 7–9 场 / 53–98 踢 / 14–25 个 miss。
+>   内层在非 test 比赛上同法切出 val，6–7 场 / 50–76 踢，供 early stopping 与选模型。
+>   因总共只有 40 场，每折 test 比原计划的 12–16 场少。
+> - 只做了按结果分层，未按赛事类别、主客场平衡。
+> - 正式结论来自重复划分：split seed 2027–2036 × 5 折（`scripts/eval_repeated_splits.py`，
+>   folds 存于 `folds/repeats/`），配合全流程 refit 置换零分布。判读标准跑前写定于
+>   `results/reports/repeated_splits_criteria_preregistered.txt`。
+
 ### 10.3 Random Event Split
 
 随机划分单次罚球事件只作为辅助对照，不作为主要结论依据。它用于测量同场比赛信息共享可能造成的性能高估。
@@ -574,6 +657,15 @@ Brier score：
 - 数据允许时绘制 calibration curve。
 
 测试折中若 `Miss` 数量过少，单折 AUROC 会不稳定，因此必须同时报告各折类别数和聚合结果。
+
+> **2026-11-04 修订（判读口径）**：
+> - 主统计量为 **pooled_rank**：各折 test 预测在折内转秩，再合并算一次 AUROC。
+>   逐折 AUROC 均值（fold_mean）在小折下的零假设不是 0.5；直接合并原始概率又受折间尺度影响。
+> - 显著性用**置换零分布**判断：打乱标签后重建 folds、重训全部臂，不与 0.5 直接比较。
+>   当前样本下零分布 p95 ≈0.55–0.57，即检测下限。
+> - 低维投影（k≤32）会抬高 fold_mean 的假阳性基线，降维类的臂需与同维随机投影对照。
+> - 已实现：AUROC、AUPRC、Balanced Acc、Brier、Log Loss、多 seed 均值±标准差、配对比较。
+>   未实现：F1、bootstrap CI、confusion matrix、calibration curve。
 
 ---
 
@@ -828,6 +920,14 @@ Brier score：
 
 明确不实现多帧聚合、GRU、LSTM 或 Temporal Transformer。
 
+> **2026-11-04 修订（完成情况）**：
+> - Must Have：除"Context MLP 有效"外均已实现。B2v2 无信号；Context 只有四类中的三类，见 §6.6 修订。
+> - Should Have：已完成多随机种子 / 重复划分。未完成：60–80 场（已定为不可行）、部分微调、
+>   特征组消融、random split 对比、bootstrap CI、Grad-CAM、高质量子集。
+> - Could Have：已做不同 FER backbone 比较（4 个 EmotiEffLib backbone + 3 个 VA-MTL backbone）。
+> - **偏离**：为检验"单帧测量噪声"假设，做过多帧均值聚合（不含时序模型，`scripts/cache_multiframe_features.py`）。
+>   结果在重复划分下无信号（multimean 0.494，p=0.55），只作为附录诊断，不进入主方法。
+
 ---
 
 ## 20. 预期结果表格
@@ -928,6 +1028,9 @@ Brier score：
 
 ## 22. 下一步行动（Immediate Next Steps）
 
+> **2026-11-04 修订**：Action 1–4 已全部完成。Action 4 的结论是停在 40 场。
+> 现行下一步见 §0.5。以下保留原文。
+
 ### Action 1：固定标注规范
 
 在批量处理 20 场前固定：
@@ -990,6 +1093,12 @@ Pilot 模型结果只用于发现实现问题和估算信号强度，不作为�
 10. 分析 FER 是否在 Context-only 基础上提供增量价值；
 11. 将结论限制为面部视觉表征与结果的预测相关性。
 
+> **2026-11-04 修订（MVP 完成情况）**：
+> - 已完成：3、5、6、7、8、9；
+> - 1 以 14 场完成；2 停在 40 场；4 只完成五类 context 中的三类；
+> - 10 已完成，结论为阴性（融合在 10/10 个划分上都低于 context-only）；
+> - 11 是写作约束，写作时持续遵守。
+
 核心研究问题：
 
 > **Do pre-trained facial expression representations provide predictive information beyond historical performance and match context in penalty shootouts?**
@@ -1009,5 +1118,11 @@ Pilot 模型结果只用于发现实现问题和估算信号强度，不作为�
 7. 结果在 random split 中较好、在 match-disjoint 设置中消失，说明同场信息泄漏会高估性能；
 8. 部分微调造成过拟合，说明当前数据规模下冻结 FER 更合适；
 9. FER 受低清晰度和领域偏移显著影响，并通过质量分层实验得到量化证明。
+
+> **2026-11-04 修订（对照当前结果）**：
+> - 第 1 条已成立：pipeline 可扩展，有效样本率 385/412 = 93%，pilot 单场处理约 3 分钟；规模的限制来自视频能否找到，不在 pipeline 本身。
+> - 第 6 条只部分成立：FER+Context 不优于 Context-only，但 Context 本身也未达显著（p=0.060），
+>   所以不能写"上下文已经解释主要信号"。更准确的表述是：两者在 385 样本的检测下限内都未显示可检出的信号。
+> - 第 7、8、9 条待 A6、M2、A7 完成后判断。
 
 最终目标不是预设“面部表情一定能够预测点球”，而是严谨评估 FER 表征与有限比赛上下文在点球大战结果预测中的相对作用和互补性。
