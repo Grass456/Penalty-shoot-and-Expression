@@ -12,7 +12,7 @@
 | Phase 1 Pilot | 完成 | 14 场世界杯（计划 20 场），123 次罚球 / 114 个有效人脸 |
 | Phase 2 扩展 | **完成，停在 40 场** | 网上能找到的可用比赛基本收齐，40 场即最终规模（见 §6.1 修订） |
 | Phase 3 单分支基线 | 完成 | B0–B4、M1 |
-| Phase 4 融合与微调 | 部分完成 | M3 完成（阴性）；M2、M4 未开始 |
+| Phase 4 融合与微调 | 部分完成 | M3 完成（阴性）；M2 组件已就绪、正式评估未跑（2026-11-05）；M4 未开始 |
 | Phase 5 正式评估与消融 | 部分完成 | 5 折 match-disjoint + 10 组重复划分 + 置换检验完成；A1、A2、A5、A6 有结果；A7、A8 未做 |
 | Phase 6 写作 | 未开始 | |
 
@@ -52,8 +52,9 @@
 
 ### 0.5 下一步
 
-1. M2 部分微调 → M4，先预注册判读线（M2 − M1、M4 − B1v2），并同时预注册置换次数的降级口径
-   （全流程 refit 对微调臂不可行：每 seed 约 10–15 分钟，200 次 × 10 seed 需数百小时）；
+1. M2 部分微调 → M4：判读线与置换降级口径已预注册（`results/reports/m2_finetune_criteria_preregistered.txt`，2026-11-05），
+   全部组件已实现并通过冒烟与端到端验证，**下一步只需跑脚本**（运行方式见 CLAUDE.md「常用命令」；臂与超参见 §12 A3）。
+   M4 需另写预注册（M4 − B1v2）。
 2. A5 的 `minus_history` 复核：它是全项目唯一过 p<0.05 的臂（0.563，p=0.020），但属于看过结果后
    从 7 个变体中挑出，须独立预注册 + 新 seed 集合才能作为结论（summary §3）；
 3. A7 高质量人脸子集：按存盘 crop 短边 ≥80px 保留 375/385、覆盖 40 场、miss 102，可直接配对比较；
@@ -690,6 +691,18 @@ Brier score：
 ### A3：Frozen FER vs. Partially Fine-tuned FER
 
 判断领域适配是否有效，以及是否产生过拟合。
+
+> **2026-11-05 组件就绪（尚未跑正式评估）**：预注册判读标准与全部超参写定于
+> `results/reports/m2_finetune_criteria_preregistered.txt`。
+> - 臂：M2 = `enet_b0_8_best_vgaf` 解冻 `blocks[-1]`（717,232 参数）+ 线性头，判别式 lr
+>   （头 1e-3 / layer4 1e-4），BN 统计量冻结，AMP 关闭；对照 M1 逐折现场重训（哨兵）。
+>   另含 `M2_head`（只训头，退化检查，信息性不判定）。
+> - 输入 = `data/faces/<match>/k*.jpg`（直接读图，不能用特征缓存 —— backbone 权重逐折变化），
+>   预处理与 `cache_fer_features.py` 逐值一致（已由 batch=1 前向断言，`max|Δ| = 0`）。
+> - 置换降级口径（用户 2026-11-05 选定）：**100 次 × 单 split seed 2027**，全流程 refit；
+>   H4 判定 = 该 seed 的配对 p_Δ < 0.05 单独成立，须在报告中标注降级、不可与主表其他臂比强度。
+> - 实现：`src/models/fer_finetune.py`、`src/training/finetune_loop.py`、`src/data/face_images.py`、
+>   `src/config/m2_finetune.yaml`、`scripts/eval_m2_finetune.py`。运行方式见 CLAUDE.md「常用命令」。
 
 ### A4：FER-only vs. Context-only vs. FER+Context
 

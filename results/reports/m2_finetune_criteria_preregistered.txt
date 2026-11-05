@@ -1,0 +1,49 @@
+M2 部分微调预注册判读标准（跑之前写定，2026-11-05）
+
+对应 plan.md §9 M2 / §12 A3（Frozen vs Partially Fine-tuned），假设表 H4（M2 vs M1）。
+
+## 1. 臂定义
+
+- M2：enet_b0_8_best_vgaf backbone，解冻 layer4 + 新建线性头（1280 -> 1）。
+  输入 = data/faces/<match>/k*.jpg 存盘 crop（face_path，385 有效样本），
+  预处理与 cache_fer_features.py 完全一致（224x224，ImageNet mean/std）。
+- M1（对照）：冻结 FER embedding + LR，直接引用主表 repeated_splits_20261104_181311；
+  置换时 M1 在同一次打乱标签下重训（LR，开销可忽略），保证 Δ 零分布配对。
+
+## 2. 超参（跑前固定，不做 sweep，不用测试折选任何东西）
+
+- 解冻范围：仅 backbone 的 layer4 + 线性头（用户 2026-11-05 选定）。
+- 判别式学习率：头 1e-3，layer4 1e-4；weight_decay 1e-2；Adam；BCEWithLogitsLoss。
+- batch_size 32（train 内按 seed+epoch 的 Generator 打乱，与 train_one_fold 约定一致）。
+- max_epochs 30，early stopping patience 5，只看 val AUROC，用尽后恢复 val 最优权重（硬约束 6）。
+- 类不平衡不加权（与 M1/LR 臂口径一致，BCE 不带 pos_weight）。
+- 每个（split seed, 折, 置换）组合：先 torch.manual_seed(组合种子) 再构造模型
+  （吸取 2026-11-04 init 未固定教训，见 mlp-init-determinism-fix）。
+
+## 3. 协议
+
+- 划分复用 eval_repeated_splits.make_folds（5 折 SGKF + 内层 val，match-disjoint，硬约束 4）。
+- 观测值：主评估跑满 10 个 split seed（2027-2036）x 5 折，Δ 的点估计带 seed 稳定性。
+- 置换（降级口径，用户 2026-11-05 选定）：100 次 x 单 split seed 2027，
+  p 分辨率 0.01；打乱全部标签 -> 同 seed 重建 folds -> 重训 M2 与 M1（全流程 refit，
+  backbone 逐次重训，不冻结），p_Δ = (1 + #{null_Δ >= obs_Δ}) / (1 + n_perm)。
+  因单 seed，无符号检验；H4 判定改为「配对 p_Δ < 0.05 单独成立」，报告须标注降级口径，
+  与主表其他臂（200 perm x 10 seed）不可直接比强度。
+
+## 4. 判读线
+
+- 主指标 pooled_rank（折内转秩后 pool，同全项目口径）。
+- H4 成立当且仅当：配对 Δ = M2 − M1 的置换 p_Δ < 0.05（单 seed 降级口径）。
+- 描述性：逐 seed Δ 的均值 ± std、方向一致性；不作为判定依据。
+- 前置一致性守门：同一 seed 下冻结臂 M1（LR）pooled_rank 必须复现主表 181311 至
+  |Δ| < 1e-6，否则中止并排查。
+- 退化检查（信息性，不判定）：冻结 backbone 只训线性头的对照，其 pooled_rank 应与 M1 同分布。
+- 结果无论正负并入 results/reports/summary_5fold_20261104.md 与 docs/plan.md §0.3 / §12 A3。
+
+## 5. 已知限制（必须写进报告）
+
+- 置换零分布只在 seed 2027 这一套 folds 上成立；不能声称对其他 split seed 也成立。
+- 无超参 sweep：固定超参下若微调不收敛或发育不良，记录现象，不放宽判读线。
+- 385 样本下微调（约 2.6M 可训练参数）过拟合风险高，val 曲线形态需一并报告。
+- 结果预期表述（若不显著）：「385 样本下检测不到领域适配收益」，
+  不写「微调无效」；若显著但落在零分布 p95 附近，按无效力口径表述。

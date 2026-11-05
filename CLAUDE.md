@@ -90,6 +90,9 @@ python scripts/run_baselines.py --models majority,context_lr_v2,fer_lr,imagenet_
        --config src/config/context_v2.yaml   # 单划分基线（seed 2026）
 python scripts/eval_repeated_splits.py       # 10 seed × 5 折 + 200 次置换（主结论来源）
 python scripts/evaluate_oof_stats.py         # 单划分统计口径 + 置换
+python scripts/eval_m2_finetune.py --smoke   # M2 部分微调：1 折冒烟（不落盘）
+python scripts/eval_m2_finetune.py --n-perm 0                # M2 观测值（10 seed × 5 折，约 10 min）
+python scripts/eval_m2_finetune.py                           # M2 全量：观测 + 100 次置换（约 2 h）
 ```
 
 events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_folds.py`。下游脚本按 event_id 对齐，发现不一致会报错。
@@ -101,9 +104,13 @@ events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_
 - **数据已定稿**：40 场 / 385 有效样本，不再扩数据。
 - **划分已定稿**：5 折 StratifiedGroupKFold + 内层 val（`folds/match_disjoint.json` schema v2）。
   正式结论用重复划分（`folds/repeats/`，seed 2027–2036）。旧 40 折 LOMO 已作废，不要引用其数字。
-- **已完成**：B0–B4、M1、M3 及多项 FER 侧诊断。重复划分下没有任何臂达到显著（B1v2 最接近，p=0.060）。
-- **下一步**：M2 部分微调 → M4（先预注册判读线），再做 A6 random split、A5 context 消融。
-- **待用户决定**：主客场与赛事类别两类 context 是补标还是记为偏离（plan.md §6.6 修订）。
+- **已完成**：B0–B4、M1、M3、A5（context 特征组消融）、A6（随机划分对照）及多项 FER 侧诊断。
+  重复划分下没有任何臂达到显著（B1v2 最接近，p=0.060）。
+- **M2 部分微调组件已就绪**（2026-11-05）：尚未跑正式评估。预注册标准与全部超参见
+  `results/reports/m2_finetune_criteria_preregistered.txt`；组件见 `src/models/fer_finetune.py`、
+  `src/training/finetune_loop.py`、`src/data/face_images.py`、`src/config/m2_finetune.yaml`。
+- **下一步**：跑 M2 → M4（先预注册判读线），再做 A7 高质量人脸子集。另有一条待复核线索：
+  `minus_history` 需独立预注册 + 新 seed 集合复核（见 summary 第 3 节）。
 
 新实验先写预注册判读标准，再跑；结果落盘 `results/`，并把结论并入 summary（见 `results/README.md`），不另建零散报告。
 

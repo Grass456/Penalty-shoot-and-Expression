@@ -1,0 +1,37 @@
+# M2 部分微调 FER 分支配置（plan.md §9 M2 / §12 A3；判读线 H4 = M2 vs M1）
+
+# 预注册（2026-11-05 跑前写定）：results/reports/m2_finetune_criteria_preregistered.txt
+# 超参在此固定，不做 sweep。改动任一值 = 新实验，须重新预注册。
+
+fer:
+  backbone: enet_b0_8_best_vgaf
+  img_size: 224            # 与 cache_fer_features 一致（b0 系 224）
+  cache_npz: features/fer/enet_b0_8_best_vgaf/embeddings.npz   # 仅用于管线一致性抽查
+
+model:
+  unfreeze_depth: 1        # 解冻 blocks[-1]（torchvision 记法 layer4）+ 线性头
+  bn_train: false          # BN 统计量冻结（主口径；n=385 下重估不可信）
+  head: linear
+
+training:
+  seed: 2027
+  lr_head: 0.001           # 判别式 lr：头快、backbone 慢
+  lr_backbone: 0.0001
+  weight_decay: 0.01
+  max_epochs: 30           # 微调收敛快；配合 patience=5 防过拟合
+  patience: 5
+  batch_size: 32
+  amp: false               # 主口径关 AMP：要求跨进程逐位可复现
+
+eval:
+  default_seeds: "2027-2036"   # 观测值：10 split seed × 5 折
+  perm_seeds: "2027"           # 置换降级口径：单 split seed（用户 2026-11-05 选定）
+  n_perm: 100
+  perm_seed: 12345
+  n_jobs: 1                    # 微调逐折占满 GPU，并行无收益且争显存
+  guard_csv: results/tables/repeated_splits_20261104_181311.csv   # M1 前置断言基准
+  guard_tol: 1.0e-6
+
+paths:
+  folds: folds/match_disjoint.json
+  events: data/metadata/events.csv
