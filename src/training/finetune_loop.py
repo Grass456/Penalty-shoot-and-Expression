@@ -114,6 +114,23 @@ def train_one_fold_images(
 
 
 @torch.no_grad()
+def logits_images(model: nn.Module, X: torch.Tensor, device: str = "cuda",
+                  batch_size: int = 128) -> np.ndarray:
+    """图像张量 → 原始 logits（sigmoid 之前）。分批前向，避免 val/test 一次性上卡。
+
+    供 M4 融合用：logit 空间加权要求读到 sigmoid 之前的量，概率无法反推（数值上可逆但
+    会抹掉尺度，而尺度正是融合层要处理的对象）。预测值本身仍走 predict_images。
+    """
+    device = torch.device(device)
+    model = model.to(device).eval()
+    out = []
+    for i in range(0, len(X), batch_size):
+        xb = X[i:i + batch_size].to(device)
+        out.append(model(xb).detach().float().cpu().numpy().reshape(-1))
+    return np.concatenate(out) if out else np.zeros(0, dtype=np.float64)
+
+
+@torch.no_grad()
 def predict_images(model: nn.Module, X: torch.Tensor, device: str = "cuda",
                    batch_size: int = 128) -> np.ndarray:
     """图像张量 → goal 概率。分批前向，避免 val/test 一次性上卡。"""

@@ -1,0 +1,68 @@
+# M4-stacked 融合配置（plan.md §9 M4 / §12 A4；判读线 H8 = M4 − context-only）
+
+# 前置诊断（描述性，不判定）：scripts/diag_branch_logits.py
+#   —— FER 支 logit std ≈1.17、Context 支 ≈0.38（尺度比 3.1×），标准化后两支均值差仅 0.23 sd，
+#      即可比；两支 test logit 相关 ≈ −0.06；若两支联合训练，w_fer 的小值会等比缩小回传梯度
+#      （梯度塌缩），故本臂把两支先训好再冻结，仅拟合 3 参数融合层。
+#
+# 与 plan §7.4 的偏离：§7.4 要求"投影到相近维度后拼接 + MLP 头"，本臂改为
+#   "两支各输出 1 维 logit → train 统计量标准化 → 3 参数加权汇总"。
+#   理由与披露见 results/reports/m4_fusion_criteria_preregistered.txt 第 1 节。
+
+fer:
+  backbone: enet_b0_8_best_vgaf
+  img_size: 224
+  cache_npz: features/fer/enet_b0_8_best_vgaf/embeddings.npz   # 仅用于管线一致性抽查
+
+# FER 支（可微调，与 M2 同结构）
+fer_branch:
+  unfreeze_depth: 1        # blocks[-1]（layer4，717,232 参数）+ 线性头
+  bn_train: false
+  lr_head: 0.001
+  lr_backbone: 0.0001
+  weight_decay: 0.01
+  max_epochs: 30
+  patience: 5
+  batch_size: 32
+  amp: false
+
+# Context 支：两个变体各跑一次（用户的对照设计）
+context_branch:
+  # --- 变体 A：B1v2 线性 LR（本项目最强臂，主表 pooled_rank 0.553 / p=0.060）
+  lr:
+    C: 1.0
+    max_iter: 5000
+  # --- 变体 B：B2v2 低容量 MLP（主表 0.495，本身已弱于 B1v2 0.058）
+  mlp:
+    hidden: 16
+    dropout: 0.3
+    lr: 0.001
+    weight_decay: 0.01
+    max_epochs: 200
+    patience: 30
+    batch_size: null
+
+# 融合层：3 个参数（w_fer, w_ctx, b），在标准化的支 logit 上拟合
+fusion:
+  standardize: train       # 支 logit 标准化统计量只来自 train（硬约束 5）
+  fit_on: val              # 融合层在**内层 val**上拟合，不用 test（硬约束 6）
+  C: 1.0                   # 3 参数下正则几乎不起作用，固定不 sweep
+  max_iter: 5000
+  # 敏感性对照（描述性）：也在 train 上拟合一版，检查 val 拟合是否只是噪声
+  also_fit_on_train: true
+
+training:
+  seed: 2027
+
+eval:
+  default_seeds: "2027-2036"   # 观测值：10 split seed × 5 折
+  perm_seeds: "2027"           # 置换降级口径：单 split seed（与 M2 一致，用户 2026-11-09 选定）
+  n_perm: 100
+  perm_seed: 12345
+  n_jobs: 1                    # FER 支逐折占满 GPU
+  guard_csv: results/tables/repeated_splits_20261104_181311.csv   # B1v2 / B2v2 / M1 前置断言基准
+  guard_tol: 1.0e-6
+
+paths:
+  folds: folds/match_disjoint.json
+  events: data/metadata/events.csv

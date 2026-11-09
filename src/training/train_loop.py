@@ -86,3 +86,11 @@ def predict(model: nn.Module, X: np.ndarray, device: str = "cpu") -> np.ndarray:
     with torch.no_grad():
         out = model(torch.tensor(X, dtype=torch.float32, device=device))
     return torch.sigmoid(out).cpu().numpy()
+
+
+def logits(model: nn.Module, X: np.ndarray, device: str = "cpu") -> np.ndarray:
+    """标准化后的 X → 原始 logits（供 M4 融合在 logit 空间加权）。"""
+    model.eval()
+    with torch.no_grad():
+        out = model(torch.tensor(X, dtype=torch.float32, device=device))
+    return out.detach().cpu().numpy().reshape(-1)

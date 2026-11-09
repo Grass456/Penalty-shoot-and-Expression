@@ -4,11 +4,13 @@
 
 | 文件 | 内容 |
 |---|---|
-| reports/summary_5fold_20261104.md | 当前结论：重复划分主表 + A6 随机划分对照 + A5 特征组消融 + M2 部分微调 + 单划分诊断 + 数据局限 |
+| reports/summary_5fold_20261104.md | 当前结论：重复划分主表 + A6 随机划分对照 + A5 特征组消融 + M2 部分微调 + M4 融合 + 单划分诊断 + 数据局限 |
 | reports/repeated_splits_criteria_preregistered.txt | 重复划分的预注册判读标准 |
 | reports/random_split_criteria_preregistered.txt | A6/H7 随机划分对照的预注册判读标准 |
 | reports/context_ablation_criteria_preregistered.txt | A5 context 特征组消融的预注册判读标准 |
 | reports/m2_finetune_criteria_preregistered.txt | M2 部分微调的预注册判读标准（含置换降级口径与全部超参） |
+| reports/m4_fusion_criteria_preregistered.txt | M4 融合的预注册判读标准（含结构偏离说明、H8a/H8b 判读线、`w` 不可辨识的口径约束） |
+| reports/diag_branch_logits_20261109_120203.json | M4 跑前诊断（两支 logit 尺度/相关，描述性不判定）—— 见 summary §4.5 第 3 条 |
 | reports/archive_lomo40.md | 40 折 LOMO 时期（已作废）的结果摘要 + 方法论教训；原始文件在 git 提交 3ed0a7b |
 | reports/*.json + tables/*.csv | 各脚本的原始输出，同名成对（`<脚本前缀>_<时间戳>`），对应关系见 summary 第 1–5 节 |
 
