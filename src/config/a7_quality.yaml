@@ -1,0 +1,51 @@
+# A7 高质量人脸子集配置（plan.md §12 A7 / §13 第 9 条；判读线 H9a + H9b）
+
+# 预注册（2026-11-10 跑前写定）：results/reports/a7_quality_criteria_preregistered.txt
+# 口径与判读线在此冻结。改动任一值 = 新实验，须重新预注册。
+
+# 子集口径：场级完整（某场全部有效踢次的 crop 短边 >= min_short_px 该场才整体进入）
+subset:
+  mode: match_complete          # match_complete | event_level（后者为 plan §0.5 原写法，未采用）
+  min_short_px: 80              # 主口径阈值；实测保留 35 场 / 333 样本
+
+# 两个质量代理各跑一轮（互为交叉验证）
+quality_proxies:
+  # 主口径：存盘 crop 的短边（385/385 覆盖）
+  crop_short:
+    source: crop_image_size     # 现算 PIL 尺寸，不依赖外部表
+    aggregate: match_min        # 场级取 min：该场任一踢次不达标则整场退出
+    n_drop_matches: 5           # 实测删除 m004/m010/m020/m025/m028
+  # 次口径：YuNet 原始检测宽度（face_frames.csv，覆盖 340/385）
+  face_w_px:
+    source: face_frames_csv
+    csv: data/metadata/face_frames.csv
+    column: face_w_px
+    aggregate: match_median_lowest   # 场级中位最低的 n_drop_matches 场退出
+    n_drop_matches: 5                # 实测删除 m004/m005/m020/m025/m038（与主口径 3/5 重合）
+
+# 臂：全部 LR / 冻结特征，参数与主表逐字段一致（不重调 C —— 否则引入子集上的选择偏差）
+arms:
+  - {name: M1,    model: lr, feats: [emb:enet_b0_8_best_vgaf], C: 0.01, primary: true}
+  - {name: M3v2,  model: lr, feats: [ctx, emb:enet_b0_8_best_vgaf], C: 0.01, primary: false}
+  - {name: B1v2,  model: lr, feats: [ctx], C: 1.0, primary: false,
+     role: 方法学阴性对照 —— context 与图像质量无关；若它也在子集上抬升，说明效应来自构成}
+
+eval:
+  seeds: "2027-2036"           # 观测值：10 split seed × 5 折
+  test_seed: 2027              # 主检验 seed（与 M2 / M4 降级口径一致）
+  n_perm: 200                  # A7-high 专用全流程 refit 置换（LR 臂，成本低）
+  perm_seed: 12345
+  n_ctrl: 200                  # A7-ctrl 随机子集重复次数
+  ctrl_seed: 777               # 控制分布固定种子（不置换标签）
+  ctrl_size: 333               # 与 A7-high 等样本量；脚本会用实际子集大小覆盖
+
+# 判读线（预注册第 4 节）
+判定:
+  alpha: 0.05                  # H9a：p < alpha
+  h9b_side: upper              # H9b：obs > p95(A7-ctrl 分布)
+  h9b_pct: 95
+  require_both: true           # H9 成立当且仅当 H9a 与 H9b 同时通过
+
+paths:
+  folds_dir: folds/repeats
+  events: data/metadata/events.csv

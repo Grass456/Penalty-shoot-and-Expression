@@ -1,0 +1,227 @@
+{
+  "created_at": "20261110_112148",
+  "purpose": "A7 高质量人脸子集：图像质量是否限制 FER 信号（H9a ∧ H9b）",
+  "criteria": "results/reports/a7_quality_criteria_preregistered.txt",
+  "config": {
+    "subset": {
+      "mode": "match_complete",
+      "min_short_px": 80
+    },
+    "quality_proxies": {
+      "crop_short": {
+        "source": "crop_image_size",
+        "aggregate": "match_min",
+        "n_drop_matches": 5
+      },
+      "face_w_px": {
+        "source": "face_frames_csv",
+        "csv": "data/metadata/face_frames.csv",
+        "column": "face_w_px",
+        "aggregate": "match_median_lowest",
+        "n_drop_matches": 5
+      }
+    },
+    "arms": [
+      {
+        "name": "M1",
+        "model": "lr",
+        "feats": [
+          "emb:enet_b0_8_best_vgaf"
+        ],
+        "C": 0.01,
+        "primary": true
+      },
+      {
+        "name": "M3v2",
+        "model": "lr",
+        "feats": [
+          "ctx",
+          "emb:enet_b0_8_best_vgaf"
+        ],
+        "C": 0.01,
+        "primary": false
+      },
+      {
+        "name": "B1v2",
+        "model": "lr",
+        "feats": [
+          "ctx"
+        ],
+        "C": 1.0,
+        "primary": false,
+        "role": "方法学阴性对照 —— context 与图像质量无关；若它也在子集上抬升，说明效应来自构成"
+      }
+    ],
+    "eval": {
+      "seeds": "2027-2036",
+      "test_seed": 2027,
+      "n_perm": 200,
+      "perm_seed": 12345,
+      "n_ctrl": 200,
+      "ctrl_seed": 777,
+      "ctrl_size": 333
+    },
+    "判定": {
+      "alpha": 0.05,
+      "h9b_side": "upper",
+      "h9b_pct": 95,
+      "require_both": true
+    },
+    "paths": {
+      "folds_dir": "folds/repeats",
+      "events": "data/metadata/events.csv"
+    }
+  },
+  "n_valid_events": 385,
+  "proxies": {
+    "crop_short": {
+      "drop_info": {
+        "threshold_px": 80.0,
+        "dropped_matches": [
+          "m004",
+          "m010",
+          "m020",
+          "m025",
+          "m028"
+        ],
+        "dropped_match_min_short": {
+          "m004": 30.0,
+          "m010": 66.0,
+          "m020": 78.0,
+          "m025": 43.0,
+          "m028": 57.0
+        },
+        "n_keep_matches": 35,
+        "n_drop_matches": 5
+      },
+      "subset": {
+        "n_matches": 35,
+        "n_events": 333,
+        "n_goal": 243,
+        "n_miss": 90,
+        "goal_rate": 0.7297297297297297
+      }
+    },
+    "face_w_px": {
+      "drop_info": {
+        "n_drop_matches": 5,
+        "dropped_matches": [
+          "m004",
+          "m005",
+          "m020",
+          "m025",
+          "m038"
+        ],
+        "dropped_match_median_face_w": {
+          "m004": 23.0,
+          "m005": 46.0,
+          "m020": 62.5,
+          "m025": 84.5,
+          "m038": 67.5
+        },
+        "coverage_events": 340
+      },
+      "subset": {
+        "n_matches": 35,
+        "n_events": 333,
+        "n_goal": 244,
+        "n_miss": 89,
+        "goal_rate": 0.7327327327327328
+      }
+    }
+  },
+  "guards": {
+    "fold_class_balance": [
+      {
+        "proxy": "crop_short",
+        "ok": true,
+        "seeds_checked": 10
+      },
+      {
+        "proxy": "face_w_px",
+        "ok": true,
+        "seeds_checked": 10
+      }
+    ]
+  },
+  "verdict": {
+    "crop_short": {
+      "primary_arm": "M1",
+      "obs_pooled_rank_test_seed": 0.4259716506630087,
+      "obs_pooled_rank_mean_10seed": 0.4493667123914037,
+      "obs_pooled_rank_std_10seed": 0.030610444023083987,
+      "H9a_null_mean": 0.4973741920806289,
+      "H9a_null_p95": 0.5701988321022412,
+      "H9a_p": 0.9353233830845771,
+      "H9a_pass": false,
+      "n_perm_effective": 200,
+      "H9b_ctrl_mean": 0.4591117897007765,
+      "H9b_ctrl_std": 0.02420944840474958,
+      "H9b_ctrl_p": 0.075,
+      "H9b_threshold_p95": 0.5021243009200793,
+      "H9b_pass": false,
+      "n_ctrl_effective": 200,
+      "secondary_arms": {
+        "M1": {
+          "obs_test_seed": 0.4259716506630087,
+          "obs_mean_10seed": 0.4493667123914037,
+          "ctrl_mean": 0.4591117897007765
+        },
+        "M3v2": {
+          "obs_test_seed": 0.4279835390946502,
+          "obs_mean_10seed": 0.44880887059899405,
+          "ctrl_mean": 0.45916691205385507
+        },
+        "B1v2": {
+          "obs_test_seed": 0.5624828532235939,
+          "obs_mean_10seed": 0.5417718335619569,
+          "ctrl_mean": 0.5526527402680269
+        }
+      },
+      "H9_holds": false
+    },
+    "face_w_px": {
+      "primary_arm": "M1",
+      "obs_pooled_rank_test_seed": 0.43502486645791116,
+      "obs_pooled_rank_mean_10seed": 0.4459730152882667,
+      "obs_pooled_rank_std_10seed": 0.03277453837851441,
+      "H9a_null_mean": 0.4992133131601653,
+      "H9a_null_p95": 0.577175023147739,
+      "H9a_p": 0.9104477611940298,
+      "H9a_pass": false,
+      "n_perm_effective": 200,
+      "H9b_ctrl_mean": 0.458573641162676,
+      "H9b_ctrl_std": 0.026143508730610266,
+      "H9b_ctrl_p": 0.185,
+      "H9b_threshold_p95": 0.5029989066407689,
+      "H9b_pass": false,
+      "n_ctrl_effective": 200,
+      "secondary_arms": {
+        "M1": {
+          "obs_test_seed": 0.43502486645791116,
+          "obs_mean_10seed": 0.4459730152882667,
+          "ctrl_mean": 0.458573641162676
+        },
+        "M3v2": {
+          "obs_test_seed": 0.4357616503960213,
+          "obs_mean_10seed": 0.4472255479830539,
+          "ctrl_mean": 0.4592197064441329
+        },
+        "B1v2": {
+          "obs_test_seed": 0.5787668078835883,
+          "obs_mean_10seed": 0.5591177012341132,
+          "ctrl_mean": 0.5556434812890862
+        }
+      },
+      "H9_holds": false
+    }
+  },
+  "limitations": [
+    "场级完整口径删掉 5 整场（52 样本），子集与全量不属于同一评估目标；所有 A7 数字只在子集内部比较，不得与全量的 0.467 / 0.553 相减。",
+    "333 样本 / miss 90 下检测下限比全量更差（零分布 p95 见 H9a_null_p95），阴性结论只能写成『在该子集的检测下限内未显示质量效应』。",
+    "face_w_px 只覆盖 340/385，次口径的场级中位基于部分样本。",
+    "crop 短边由人工截帧决定，不完全等于检测质量；两代理一致性是主要缓释手段。",
+    "无超参 sweep：C 沿用主表定值，不为子集重调（否则引入子集上的选择偏差）。",
+    "B1v2 为方法学阴性对照（context 与图像质量无关）；若它也在 A7-high 上抬升，说明效应来自子集构成。"
+  ]
+}

@@ -10,6 +10,7 @@
 | reports/context_ablation_criteria_preregistered.txt | A5 context 特征组消融的预注册判读标准 |
 | reports/m2_finetune_criteria_preregistered.txt | M2 部分微调的预注册判读标准（含置换降级口径与全部超参） |
 | reports/m4_fusion_criteria_preregistered.txt | M4 融合的预注册判读标准（含结构偏离说明、H8a/H8b 判读线、`w` 不可辨识的口径约束） |
+| reports/a7_quality_criteria_preregistered.txt | A7 高质量人脸子集的预注册判读标准（场级完整口径、H9a/H9b 判读线、B1v2 方法学对照、功率警告） |
 | reports/diag_branch_logits_20261109_120203.json | M4 跑前诊断（两支 logit 尺度/相关，描述性不判定）—— 见 summary §4.5 第 3 条 |
 | reports/archive_lomo40.md | 40 折 LOMO 时期（已作废）的结果摘要 + 方法论教训；原始文件在 git 提交 3ed0a7b |
 | reports/*.json + tables/*.csv | 各脚本的原始输出，同名成对（`<脚本前缀>_<时间戳>`），对应关系见 summary 第 1–5 节 |

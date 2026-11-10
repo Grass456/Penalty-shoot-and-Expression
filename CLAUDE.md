@@ -100,11 +100,17 @@ python scripts/eval_m4_fusion.py --smoke     # M4 融合：1 seed × 1 折冒烟
 python scripts/eval_m4_fusion.py --n-perm 0  # M4 观测值（10 seed × 5 折，约 6 min）
 python scripts/eval_m4_fusion.py             # M4 全量：观测 + 100 次置换（约 70 min）
 # M4 已于 2026-11-09 跑完（阴性，见 summary §4.5）；注意 nohup 在本环境不落日志，用 tee 或重定向
+
+python scripts/eval_a7_quality.py --profile  # A7 质量画像（crop 短边/face_w_px 分布与删场），不训练
+python scripts/eval_a7_quality.py --smoke    # A7 高质量子集：量级检查（不落盘）
+python scripts/eval_a7_quality.py --n-perm 0 # A7 观测值（10 seed × 5 折，秒级）
+python scripts/eval_a7_quality.py            # A7 全量：观测 + 200 置换 + 200 随机子集（约 2 min）
+# A7 已于 2026-11-10 跑完（阴性，见 summary §4.6）
 ```
 
 events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_folds.py`。下游脚本按 event_id 对齐，发现不一致会报错。
 
-## 当前阶段（2026-11-09）
+## 当前阶段（2026-11-10）
 
 详细进度、假设检验现状和与原计划的偏离见 [docs/plan.md](docs/plan.md) §0；当前全部结论数字见 [results/reports/summary_5fold_20261104.md](results/reports/summary_5fold_20261104.md)。
 
@@ -112,7 +118,8 @@ events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_
 - **划分已定稿**：5 折 StratifiedGroupKFold + 内层 val（`folds/match_disjoint.json` schema v2）。
   正式结论用重复划分（`folds/repeats/`，seed 2027–2036）。旧 40 折 LOMO 已作废，不要引用其数字。
 - **Phase 4 已完成**：B0–B4、M1、M2（部分微调，阴性）、M3、M4（融合，阴性）、A5（context 特征组消融）、
-  A6（随机划分对照）及多项 FER 侧诊断。重复划分下没有任何臂达到显著（B1v2 最接近，p=0.060）。
+  A6（随机划分对照）、A7（高质量子集，阴性）及多项 FER 侧诊断。重复划分下没有任何臂达到显著
+  （B1v2 最接近，p=0.060）。
 - **M2 已完成（2026-11-06，H4 不支持）**：M2 0.488 vs M1 0.467，检验 seed 配对 Δ +0.010、p_Δ=0.475；
   只训线性头的对照与 M2 只差 0.003，微调 backbone 无贡献。报告
   `results/reports/m2_finetune_20261106_145706.json`，详析见 summary §4。
@@ -120,7 +127,12 @@ events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_
   M4_mlp 0.491 vs B2v2 0.495（p_Δ=0.297）。融合稳定低于 context-only。报告
   `results/reports/m4_fusion_20261109_132841.json`，详析见 summary §4.5。
   **口径警示**：融合权重 `w` 不可辨识（换拟合位置翻 13 倍），不得用于判读 FER 有无信号。
-- **下一步**：A7 高质量人脸子集（375/385，可直接配对）、A8 人脸区域检查、Phase 6 写作。
+- **A7 已完成（2026-11-10，H9 不支持）**：场级完整 ≥80px → 35 场 / 333 样本；M1 0.449 ± 0.031，
+  H9a p=0.935（零分布 p95 0.570）、H9b 落随机子集分布 7.5% 百分位（ctrl 0.459 ± 0.024），
+  两口径一致。**方法学对照 B1v2 同步下降 −0.011（−3.5 sd，已排除单场主导）**，说明子集构成主导，
+  无法干净归因于画质。报告 `results/reports/a7_quality_20261110_112148.json`，详析见 summary §4.6。
+  **口径警示**：A7 的数字只在子集内比较，不得与全量 0.467/0.553 相减；结论写"未检出"不写"证否"。
+- **下一步**：A8 人脸区域检查（**须带 A7-ctrl 式随机等量子集对照**）、Phase 6 写作。
   另有一条待复核线索：`minus_history` 需独立预注册 + 新 seed 集合复核（见 summary §3）。
 
 新实验先写预注册判读标准，再跑；结果落盘 `results/`，并把结论并入 summary（见 `results/README.md`），不另建零散报告。
