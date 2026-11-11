@@ -110,7 +110,7 @@ python scripts/eval_a7_quality.py            # A7 全量：观测 + 200 置换 +
 
 events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_folds.py`。下游脚本按 event_id 对齐，发现不一致会报错。
 
-## 当前阶段（2026-11-10）
+## 当前阶段（2026-11-11）
 
 详细进度、假设检验现状和与原计划的偏离见 [docs/plan.md](docs/plan.md) §0；当前全部结论数字见 [results/reports/summary_5fold_20261104.md](results/reports/summary_5fold_20261104.md)。
 
@@ -119,7 +119,7 @@ events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_
   正式结论用重复划分（`folds/repeats/`，seed 2027–2036）。旧 40 折 LOMO 已作废，不要引用其数字。
 - **Phase 4 已完成**：B0–B4、M1、M2（部分微调，阴性）、M3、M4（融合，阴性）、A5（context 特征组消融）、
   A6（随机划分对照）、A7（高质量子集，阴性）及多项 FER 侧诊断。重复划分下没有任何臂达到显著
-  （B1v2 最接近，p=0.060）。
+  （B1v2 最接近，p=0.060）。**Phase 5 亦已收尾**（A1–A7 有结果，A8 决定不执行）。
 - **M2 已完成（2026-11-06，H4 不支持）**：M2 0.488 vs M1 0.467，检验 seed 配对 Δ +0.010、p_Δ=0.475；
   只训线性头的对照与 M2 只差 0.003，微调 backbone 无贡献。报告
   `results/reports/m2_finetune_20261106_145706.json`，详析见 summary §4。
@@ -132,7 +132,13 @@ events.csv 变动后，必须先重跑 `cache_*_features.py --force` 和 `build_
   两口径一致。**方法学对照 B1v2 同步下降 −0.011（−3.5 sd，已排除单场主导）**，说明子集构成主导，
   无法干净归因于画质。报告 `results/reports/a7_quality_20261110_112148.json`，详析见 summary §4.6。
   **口径警示**：A7 的数字只在子集内比较，不得与全量 0.467/0.553 相减；结论写"未检出"不写"证否"。
-- **下一步**：A8 人脸区域检查（**须带 A7-ctrl 式随机等量子集对照**）、Phase 6 写作。
+- **A8 决定不执行（2026-11-11，用户决定）**：归因类实验以"存在可归因信号"为前提，主表 M1 无信号
+  （0.467，p=0.821）且 M2/M3/M4/A7 全阴性，两个可能结果均不改主结论；且 48/385 样本需另建源帧
+  找回流程（45 个不在 face_frames.csv、3 个为人工裁剪无检测框）。"是否场景线索"已由 B4 同骨干
+  对照 + A7 + 检测下限覆盖。偏离记录 plan §0.4 第 8 条；**不得**写成"已排除场景线索依赖"。
+- **Phase 5 已收尾，实验性工作全部结束**。
+- **下一步**：Phase 6 写作（proposal.tex 仍为 pilot 版，须按 40 场定稿更新；
+  四条口径警示：M2 brier/logloss 不作优势、H7 写"测不出来"、w_fer 不判读、A8 记为偏离）。
   另有一条待复核线索：`minus_history` 需独立预注册 + 新 seed 集合复核（见 summary §3）。
 
 新实验先写预注册判读标准，再跑；结果落盘 `results/`，并把结论并入 summary（见 `results/README.md`），不另建零散报告。
