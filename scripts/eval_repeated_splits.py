@@ -39,7 +39,7 @@ from joblib import Parallel, delayed
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (average_precision_score, balanced_accuracy_score,
-                             brier_score_loss, log_loss, roc_auc_score)
+                             brier_score_loss, f1_score, log_loss, roc_auc_score)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
@@ -229,6 +229,7 @@ def full_stats(oof: list[tuple]) -> dict:
         "pooled_rank": pooled_rank(oof),
         "fold_mean": float(np.mean(aucs)),
         "pooled_auprc": float(average_precision_score(ys, ps)),
+        "pooled_f1_goal": float(f1_score(ys, (ps >= 0.5).astype(int), zero_division=0)),
         "pooled_brier": float(brier_score_loss(ys, ps)),
         "pooled_logloss": float(log_loss(ys, np.clip(ps, 1e-6, 1 - 1e-6))),
         "pooled_balanced_acc": float(balanced_accuracy_score(ys, (ps >= 0.5).astype(int))),

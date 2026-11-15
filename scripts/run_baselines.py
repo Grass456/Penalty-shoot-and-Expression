@@ -26,7 +26,7 @@
       其余协议与 M3 完全一致，使 M3v2 − M3 只归因于 context 基座；
     - B4 ImageNet LR：efficientnet_b0 frozen embedding 对照臂，与 M1 同协议，
       M1-B4 之差 = 情绪域预训练增益（H1 判据）；
-    - 指标：AUROC / AUPRC / Balanced Acc / Brier（硬约束 7），逐折 + 聚合；
+    - 指标：AUROC / AUPRC / goal-class F1 / Balanced Acc / Brier（硬约束 7），逐折 + 聚合；
     - 结果落盘 results/tables/ 与 results/reports/，报告里记录配置与数据指纹。
 
 pilot 结果只用于发现实现问题和估算信号强度，不作最终论文结论（plan.md §10.1）。
@@ -46,7 +46,7 @@ import pandas as pd
 import yaml
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (average_precision_score, balanced_accuracy_score,
-                             brier_score_loss, roc_auc_score)
+                             brier_score_loss, f1_score, roc_auc_score)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -142,7 +142,7 @@ def build_context_matrix(ev: pd.DataFrame, alpha: float = BETA_ALPHA, beta: floa
 
 
 def metrics(y_true: np.ndarray, p_hat: np.ndarray) -> dict:
-    """AUROC / AUPRC / Balanced Acc / Brier。p_hat 为常数时 sklearn 也能算 AUROC。"""
+    """AUROC / AUPRC / F1 / Balanced Acc / Brier。"""
     y = (np.asarray(y_true) == 1).astype(int)
     p = np.asarray(p_hat, dtype=float)
     return {
@@ -151,6 +151,7 @@ def metrics(y_true: np.ndarray, p_hat: np.ndarray) -> dict:
         "n_miss": int((1 - y).sum()),
         "auroc": float(roc_auc_score(y, p)) if len(np.unique(y)) == 2 else None,
         "auprc": float(average_precision_score(y, p)) if len(np.unique(y)) == 2 else None,
+        "f1_goal": float(f1_score(y, (p >= 0.5).astype(int), zero_division=0)),
         "balanced_acc": float(balanced_accuracy_score(y, (p >= 0.5).astype(int))) if len(np.unique(p)) > 1 else None,
         "brier": float(brier_score_loss(y, p)),
     }

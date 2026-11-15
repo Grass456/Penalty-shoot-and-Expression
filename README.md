@@ -25,7 +25,7 @@
 - 点球大战（penalty shootout）中的罚球事件；
 - 每次罚球触球前的**单帧**面部图像；
 - 预训练 FER encoder 的情绪概率与中间层 embedding；
-- 基于五类上下文变量的 Context MLP；
+- 基于比赛上下文的 Context LR / MLP；
 - FER-only / Context-only / FER+Context 三类模型；
 - 冻结 vs. 部分微调 FER 的比较；
 - 以比赛为分组单位的跨比赛评估（match-disjoint）；
@@ -50,12 +50,12 @@
                                                     ├──► Emotion Probabilities ──► Face Classifier (FER-only)
                                                     └──► FER Embedding         ──┐
                                                                                  ├──► Feature Fusion ──► Goal/Miss 概率
-历史表现/主客场/轮次/罚球前比分/赛事类别 ──► Context MLP ───────────────────────────┘    (FER + Context)
+历史表现/轮次/罚球前比分 ──► Context LR / MLP ───────────────────────────────┘    (FER + Context)
 ```
 
-- **FER 分支**：冻结 encoder → 预提取缓存 embedding / 情绪概率；下游用低容量 MLP。
-- **Context 分支**：五类变量 → 1–2 层 MLP + dropout + weight decay。
-- **融合**：两分支投影到相近维度后拼接，避免高维 FER 压倒低维 context。
+- **FER 分支**：冻结 encoder → 预提取 embedding / 情绪概率；下游使用低容量分类器。
+- **Context 分支**：最终使用六维 context v2，比较 LR 与 MLP。
+- **融合**：比较冻结 FER + context 与部分微调 FER + context；融合实验使用预注册的低容量 logit 融合。
 
 ---
 
@@ -64,8 +64,8 @@
 | 编号 | 模型 | 输入 | 用途 |
 |---|---|---|---|
 | B0 | Majority Class | — | 下界 |
-| B1 | Context Logistic Regression | 五类 context | 线性上下文基线 |
-| B2 | Context MLP | 五类 context | 主要 Context-only |
+| B1 | Context Logistic Regression | 六维 context v2 | 线性上下文基线 |
+| B2 | Context MLP | 六维 context v2 | 主要 Context-only |
 | B3 | Emotion Probability Classifier | FER 情绪概率 | 粗粒度情绪是否有用 |
 | B4 | ImageNet Embedding Classifier | ImageNet embedding | FER 预训练的特殊价值对照 |
 | M1 | Frozen FER Embedding Classifier | FER embedding | 主要 FER-only |
@@ -73,24 +73,25 @@
 | M3 | Frozen FER + Context MLP | 两分支特征 | FER 增量价值 |
 | M4 | Fine-tuned FER + Context MLP | 两分支特征 | 最终融合模型 |
 
-最低必做：B0、B1、B2、B3、B4、M1、M3。M2 / M4 在正式数据集与冻结模型稳定后进行。
+最低必做：B0、B1、B2、B3、B4、M1、M3。M2 / M4 已在最终数据集上完成。
 
 ---
 
 ## 数据计划
 
-两阶段建设：
+数据建设已完成：
 
-1. **阶段一 — 20 场 Pipeline Pilot**：验证视频可得性、人脸切片质量、FER 可用性、context 完整性与处理成本，**不作最终结论**。
-2. **阶段二 — 60–80 场正式数据集**：基于 pilot 实测有效率扩展，构建 match-disjoint folds。
+1. **Pipeline Pilot**：14 场、123 次罚球、114 个有效人脸，用于验证处理流程。
+2. **最终数据集**：40 场、412 次罚球、385 个有效样本（goal 278 / miss 107）；27 个样本因 `no_face` 排除。
 
-### Context 五类特征
+### Context 特征
 
-1. 历史点球表现（Beta smoothing，按罚球日期严格时间截断）；
-2. 主客场（`home` / `away` / `neutral`）；
-3. 点球大战轮次（轮次号、本轮先/后罚、是否突然死亡）；
-4. 罚球前比分（本队/对手已进球、净胜球差、已完成罚球数）；
-5. 赛事类别（合并为少量稳定类别）。
+1. 历史点球表现（按罚球日期严格时间截断）；
+2. 点球大战状态（轮次内顺序、是否突然死亡）；
+3. 罚球前比分（本队/对手已进球、比分差）；
+4. `history_missing` 与 `has_history` 指示变量。
+
+主客场和赛事类别在最终版本中未建模，论文中作为与原计划的偏离披露。
 
 ### 结果标签
 
@@ -100,9 +101,11 @@
 
 ## 评估协议
 
-- **主**：Match-disjoint GroupKFold（`match_id` 为 group，建议 5-fold），同场罚球不跨集合。
+- **主**：StratifiedGroupKFold 5-fold（`match_id` 为 group），同场罚球不跨集合；使用 10 组 split seed。
 - **辅**：Random event split，仅用于测量同场信息共享造成的性能高估。
-- **指标**：AUROC、AUPRC、Balanced Accuracy、F1、Brier Score、Log Loss；多随机种子 + bootstrap CI。
+- **主指标**：折内排序后合并的 `pooled_rank`，并以全流程标签置换零分布判读。
+- **辅助指标**：AUROC、AUPRC、goal-class F1（阈值 0.5）、Balanced Accuracy、Brier Score、Log Loss。
+- **不确定性**：`scripts/eval_f1_bootstrap.py` 提供按 `match_id` 聚类的 percentile bootstrap 95% CI；split seed 的均值 ± 标准差单独报告。
 - 进球通常多于未进球，**禁止只报告 accuracy**。
 
 ---
@@ -121,7 +124,6 @@ Penalty-shoot-and-Expression/
 │   ├── data/              #   数据 pipeline（切片、人脸选择、context 构建）
 │   ├── models/            #   FER / Context / Fusion 模型定义
 │   ├── training/          #   训练循环
-│   ├── evaluation/        #   划分、指标、消融
 │   └── config/            #   配置
 ├── scripts/               # 可执行脚本（切片、标注辅助、跑实验）
 ├── docs/                  # 文档
@@ -149,35 +151,54 @@ pip install -r requirements.txt
 #   pip install -r requirements.txt
 # 先用 nvidia-smi 确认驱动 ≥ 550（cu124 要求）；驱动较老则按 requirements.txt 头部注释换 cu121
 
-# 2.（待实现）准备数据元数据
-# python scripts/build_metadata.py --matches data/metadata/matches.csv
-
-# 3.（待实现）提取触球前切片与单帧人脸
+# 已完成的数据与特征产物位于 data/metadata、data/faces、features/fer。
+# 若要从原始视频重建 pipeline：
 # python scripts/extract_clips.py
 # python scripts/select_face_frames.py
-
-# 4.（待实现）缓存 FER 特征
 # python scripts/cache_fer_features.py
 
-# 5.（待实现）跑基线与融合
-# python scripts/run_experiment.py --config src/config/baselines.yaml
+# 验证最终数据与折划分
+python scripts/build_folds.py --validate
+
+# 主重复划分实验（已有结果见 results/reports/）
+python scripts/eval_repeated_splits.py --n-perm 200
+
+# 补算 goal-class F1 与比赛级 bootstrap 95% CI
+python scripts/eval_f1_bootstrap.py --n-bootstrap 2000
+
+# 如需同时补算 M2 / M4（需要 PyTorch 和本地人脸图像，运行更久）
+python scripts/eval_f1_bootstrap.py --include-finetune --n-bootstrap 2000
 ```
 
-> 以上命令为规划中的入口，具体实现随 Phase 推进补全。
+> 原始视频和人脸图像不随仓库分发；从头重建 pipeline 需要本地准备合法的视频源和检测模型。
 
 ---
 
 ## 实施阶段
 
 - **Phase 0**：标注规范与工具准备
-- **Phase 1**：20 场 Pipeline Pilot + 端到端 smoke test
-- **Phase 2**：扩展至 60–80 场
-- **Phase 3**：单分支基线（B0–B4、M1）
-- **Phase 4**：融合与微调（M3、M2、M4）
-- **Phase 5**：正式评估与消融（match-disjoint、随机种子、特征消融、泄漏分析）
-- **Phase 6**：写作与展示（NeurIPS 四页正文）
+- **Phase 1**：完成，14 场 pipeline pilot
+- **Phase 2**：完成，最终规模 40 场
+- **Phase 3**：完成，单分支基线 B0–B4、M1
+- **Phase 4**：完成，融合与部分微调 M2、M3、M4
+- **Phase 5**：完成，正式评估、消融、随机划分和质量诊断
+- **Phase 6**：下一步，整理结果并进入论文写作
 
 详见 [docs/plan.md](docs/plan.md)。
+
+---
+
+## 当前结果摘要
+
+主结果见 [results/reports/summary_5fold_20261104.md](results/reports/summary_5fold_20261104.md)。在 10 组重复划分下：
+
+- Context LR（B1v2）：`pooled_rank = 0.553 ± 0.017`，未通过预注册显著性判定；
+- 冻结 FER embedding（M1）：`0.467 ± 0.028`，置换 `p = 0.821`；
+- ImageNet embedding（B4）：`0.464 ± 0.021`，M1 − B4 的配对差为 `+0.003`，`p = 0.483`；
+- 冻结 FER + context（M3v2）：低于 context-only，配对差为 `−0.086`；
+- 部分微调和 logit 融合均未产生可测增量。
+
+这些结果支持的结论是：在当前样本量、360p 转播画质和检测下限内，未检出 FER 表征对点球结果的稳定增量预测价值；这不是对因果关系或真实心理状态的判断。
 
 ---
 
