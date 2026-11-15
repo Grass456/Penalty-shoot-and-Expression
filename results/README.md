@@ -13,7 +13,7 @@
 | reports/a7_quality_criteria_preregistered.txt | A7 高质量人脸子集的预注册判读标准（场级完整口径、H9a/H9b 判读线、B1v2 方法学对照、功率警告） |
 | reports/minus_history_recheck_criteria_preregistered.txt | A5 `minus_history` 独立复核的预注册判据（C1–C4，seed 2037–2046，含 2026-11-15 跑后追加的结果段） |
 | reports/minus_history_recheck_20261115_100010.json | 上述复核的报告：新 seed 集合下 Δ=+0.0241、p_Δ=0.109，**H10 未成立**（见 summary §3 第 3 条） |
-| reports/f1_bootstrap_<timestamp>.json + tables/f1_bootstrap_<timestamp>_*.csv | 主重复划分臂的 goal-class F1、AUROC/AUPRC 等指标，以及按 `match_id` 聚类的 bootstrap 95% CI；由 `scripts/eval_f1_bootstrap.py` 生成 |
+| reports/f1_bootstrap_20261115_123741.json + tables/f1_bootstrap_20261115_123741_*.csv | 主重复划分臂（含 M2/M4）的 goal-class F1、AUROC/AUPRC 等指标，以及按 `match_id` 聚类的 bootstrap 95% CI；由 `scripts/eval_f1_bootstrap.py` 生成 |
 | figures/fig1_main_results.{pdf,png} | 论文图 1：11 臂 pooled_rank ± sd 对零分布（左）+ 五个配对比较（右）。`scripts/make_figures.py` 生成，只读既有报告 |
 | figures/fig2_seed_stability.{pdf,png} | 论文图 2：B1v2/M1（2027–36）与 full/minus_history（2037–46）的逐 seed 折线，显示点估计随 seed 集合漂移 |
 | figures/fig3_signal_map.{pdf,png} | 论文图 3：(a) 单变量 context 效应（描述性，由 events.csv 算）；(b) A7 子集下两臂同步下降 |
