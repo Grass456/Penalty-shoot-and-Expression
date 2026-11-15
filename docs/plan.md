@@ -57,8 +57,14 @@
 
 ### 0.5 下一步
 
-1. A5 的 `minus_history` 复核：它是全项目唯一过 p<0.05 的臂（0.563，p=0.020），但属于看过结果后
-   从 7 个变体中挑出，须独立预注册 + 新 seed 集合才能作为结论（summary §3）；
+1. ~~A5 的 `minus_history` 复核~~ **已完成 2026-11-15，未复现**：预注册判读标准见
+   `results/reports/minus_history_recheck_criteria_preregistered.txt`，脚本
+   `scripts/eval_minus_history_recheck.py`，报告 `results/reports/minus_history_recheck_20261115_100010.json`。
+   新 seed 集合 2037–2046（与 A5 的 2027–2036 不相交）：minus_history 0.5651±0.013（p=0.010，零分布
+   p95=0.5503），full 0.5411±0.015（p=0.114），**Δ = +0.0241，p_Δ=0.109（C3 未过）**。
+   即该变体仍略高于零分布，但**相对完整 context 模型的增量在配对置换下不显著**，
+   且两臂随 seed 集合一起漂移（full 0.553→0.541），故不能归因于"移除历史组"。
+   写作口径：**不得**写"历史表现有害/无用"，不替换 B1v2，不改写 H5（详见 summary §3 第 3 条）；
 2. player 跨折重复统计（§10.4，需要补回球员标识）；
 3. 写作（Phase 6）：`proposal/proposal.tex` 仍是 pilot 版本，须按 40 场定稿更新。
 

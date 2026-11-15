@@ -1,0 +1,135 @@
+{
+  "created_at": "2026-11-15T10:00:10",
+  "purpose": "A5 minus_history 独立复核：新 seed 集合 2037-2046，检验 0.563 / p=0.020 是否复现",
+  "criteria": "results/reports/minus_history_recheck_criteria_preregistered.txt",
+  "split_seeds": [
+    2037,
+    2038,
+    2039,
+    2040,
+    2041,
+    2042,
+    2043,
+    2044,
+    2045,
+    2046
+  ],
+  "n_perm": 200,
+  "perm_seed": 12345,
+  "perm_redraws_total": 0,
+  "n_valid_events": 385,
+  "guard": {
+    "method": "与落盘 repeated_splits_20261104_181311.csv 的 B1v2 逐位对照（seed 2027-2036）",
+    "reference": "results/tables/repeated_splits_20261104_181311.csv",
+    "max_abs_dev": 0.0,
+    "n_checked": 10
+  },
+  "variants": {
+    "full": {
+      "pooled_rank_mean": 0.5410559402944932,
+      "pooled_rank_std": 0.015033492661524475,
+      "pooled_rank_min": 0.5171115444093323,
+      "pooled_rank_max": 0.5621932360653533,
+      "per_seed_pooled_rank": [
+        0.5438,
+        0.5622,
+        0.5286,
+        0.5171,
+        0.561,
+        0.5378,
+        0.5216,
+        0.5343,
+        0.5511,
+        0.5531
+      ],
+      "cols": [
+        "sudden_death",
+        "is_trailing",
+        "kick_order_second",
+        "score_diff",
+        "has_history",
+        "history_rate"
+      ],
+      "fold_mean_mean": 0.5431065203149986,
+      "pooled_auprc_mean": 0.7370484276942577,
+      "pooled_brier_mean": 0.2041733347622911,
+      "pooled_logloss_mean": 0.6011492199866266,
+      "pooled_balanced_acc_mean": 0.5022271902104484,
+      "null_mean": 0.49456834532374105,
+      "null_std": 0.03535203032782819,
+      "null_p95": 0.5535471996234788,
+      "p": 0.11442786069651742
+    },
+    "minus_history": {
+      "pooled_rank_mean": 0.5651398507362335,
+      "pooled_rank_std": 0.012978879540856202,
+      "pooled_rank_min": 0.5478719827876017,
+      "pooled_rank_max": 0.5842130034290324,
+      "per_seed_pooled_rank": [
+        0.5479,
+        0.58,
+        0.5485,
+        0.5495,
+        0.571,
+        0.5749,
+        0.5842,
+        0.5609,
+        0.5594,
+        0.5751
+      ],
+      "cols": [
+        "sudden_death",
+        "is_trailing",
+        "kick_order_second",
+        "score_diff"
+      ],
+      "fold_mean_mean": 0.5692275744108974,
+      "pooled_auprc_mean": 0.7492358817314609,
+      "pooled_brier_mean": 0.20120311049411824,
+      "pooled_logloss_mean": 0.5932737195978741,
+      "pooled_balanced_acc_mean": 0.5005025885833388,
+      "null_mean": 0.49687326027028844,
+      "null_std": 0.033354182919434226,
+      "null_p95": 0.5503090331473139,
+      "p": 0.009950248756218905
+    }
+  },
+  "comparison": {
+    "a": "minus_history",
+    "b": "full",
+    "delta_mean": 0.024083910441740054,
+    "delta_std": 0.016233987763950287,
+    "n_seeds_positive": 10,
+    "n_seeds": 10,
+    "per_seed_delta": [
+      0.0041,
+      0.0179,
+      0.0199,
+      0.0324,
+      0.01,
+      0.0371,
+      0.0626,
+      0.0266,
+      0.0084,
+      0.022
+    ],
+    "null_mean": 0.002304914946547436,
+    "null_p95": 0.02749949573051837,
+    "p_delta": 0.10945273631840796
+  },
+  "criteria_check": {
+    "C1_p_lt_0.05": true,
+    "C2_delta_pos_and_8of10": true,
+    "C3_p_delta_lt_0.05": false,
+    "C4_above_null_p95": true,
+    "holds": false
+  },
+  "verdict": "未复现：minus_history 是单一 seed 集合上的偏高，独立 seed 集合未复现，A5 线索结案为噪声",
+  "a5_reference": {
+    "report": "results/reports/context_ablation_20261104_182831.json",
+    "seeds": "2027-2036",
+    "minus_history_pooled_rank": 0.563,
+    "p": 0.02
+  },
+  "per_seed_table": "results/tables/minus_history_recheck_20261115_100010.csv"
+}
