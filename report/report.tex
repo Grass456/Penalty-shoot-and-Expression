@@ -1,0 +1,168 @@
+\documentclass{article}
+
+\PassOptionsToPackage{numbers,compress}{natbib}
+\usepackage[preprint]{Styles/neurips_2025}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\title{Can Pre-trained Facial Expression Representations Predict Penalty Shootout Outcomes Beyond Match Context?}
+
+\author{%
+  XunZhi Cai \\
+  \texttt{xcai166@connect.hkust-gz.edu.cn}
+}
+
+\newcommand{\prank}{\texttt{pooled\_rank}}
+\newcommand{\fer}{\textsc{fer}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Penalty shootouts test whether pre-kick facial representations add predictive information beyond match context. We study 40 shootouts, 412 kicks, and 385 valid face samples, comparing context-only, FER, ImageNet-control, fine-tuned, and fusion models under match-disjoint five-fold evaluation, ten split seeds, and permutation tests. No FER-only, fine-tuned, or fused model shows stable incremental value. Context logistic regression has weak, non-significant ranking ability. Results are limited to the present sample size, broadcast quality, and detection range and do not infer internal emotion.
+\end{abstract}
+
+\section{Introduction}
+
+Penalty shootouts turn a match outcome into a sequence of discrete decisions. Because broadcast footage often shows the kicker immediately before the kick, the setting offers a compact test of event-level visual prediction. We ask whether a pretrained facial expression recognition (FER) representation adds information beyond historical penalty performance and match context. FER outputs are representations of facial appearance, not direct measurements of a person's internal mental state \citep{barrett2019}.
+
+The transfer setting is difficult. FER models are trained on expression datasets with different image distributions and label assumptions, while penalty-shootout footage is compressed, low-resolution, and affected by pose, lighting, camera selection, and occlusion. Shared match structure, repeated players, or post-event information can also create apparent signal. Validation that ignores such dependence can produce optimistic estimates \citep{roberts2017,varma2006}.
+
+We compare context-only models with frozen and fine-tuned FER representations, emotion probabilities, generic ImageNet features, and late fusion. The project contributes a leakage-controlled pre-kick pipeline, a match-disjoint comparison across representation and fusion choices, and a negative-result analysis with permutation tests, cluster bootstrap intervals, and an explicit detection limit. The conclusion is a calibrated feasibility result for low-resolution broadcast footage.
+
+\section{Related Work}
+
+FER research increasingly uses deep representations trained on in-the-wild datasets such as AffectNet \citep{mollahosseini2019}. EfficientNet illustrates the pretrained backbone family used in this project, while the ImageNet control tests whether any result is specific to FER pretraining \citep{tan2019,deng2009}. Because facial movements do not map one-to-one onto private emotional states \citep{barrett2019}, our target is the observed goal/miss outcome rather than a psychological interpretation.
+
+The evaluation follows work on structured cross-validation. Grouped validation prevents observations from the same higher-level unit from being split across training and test, and nested model selection reduces selection bias \citep{roberts2017,varma2006}. We apply these principles at the match level and add cluster bootstrap intervals for auxiliary metrics.
+
+\section{Methodology}
+
+\subsection{Task and dataset}
+
+Each observation is one penalty-shootout kick with a binary label. The final collection contains 40 matches and 412 recorded kicks. The preprocessing pipeline retained 385 valid observations, including 278 goals and 107 misses. Twenty-seven kicks were excluded because no qualified face frame was available. The videos are mainly 360p broadcast recordings. A candidate face was accepted only from a time window before ball contact. Frames after the kick, goalkeeper reactions, and other post-event information were excluded.
+
+\subsection{Preprocessing and features}
+
+The visual branch selects a face crop, caches FER emotion probabilities and an intermediate embedding, and applies a linear downstream classifier. The main context branch uses six pre-kick variables. They encode temporally truncated historical penalty performance, round and kick order, sudden-death status, and the score before the kick, together with indicators for missing history. Historical statistics are computed only from completed seasons before the match date. Venue status and competition category were not modeled in the final context specification. The analysis therefore treats the context branch as a controlled baseline, not as a complete description of match state.
+
+\subsection{Model families}
+
+The core comparison includes a majority baseline, B1v2 context logistic regression, B2v2 context MLP, B3 emotion-probability classifiers, M1 frozen FER embeddings, B4 ImageNet embeddings, M2 partial FER fine-tuning, M3v2 frozen FER plus context, and M4 logit fusion. The ImageNet control uses a generic visual representation rather than an expression-specific encoder \citep{deng2009}. The context and FER branches are trained separately in the main fusion experiment. The fusion layer combines standardized branch logits with three fitted parameters. This design keeps the two branches attributable, while leaving higher-dimensional feature interaction for future work. Figure~\ref{fig:pipeline} summarizes the resulting information flow.
+
+For a context vector $x_i$, the logistic baseline estimates $p_i=\sigma(\beta^{\top}x_i+b)$. In the fusion arms, standardized branch logits are combined as
+\begin{equation}
+\ell_i = w_f z^{\mathrm{FER}}_i + w_c z^{\mathrm{ctx}}_i + b,
+\qquad p_i=\sigma(\ell_i),
+\end{equation}
+with the three fusion parameters fitted on the inner validation split.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.99\columnwidth]{figures/fusion_pipeline.png}
+\caption{Leakage-controlled fusion pipeline. All inputs are available before ball contact.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Evaluation protocol}
+
+The primary evaluation uses stratified grouped five-fold cross-validation with \texttt{match\_id} as the group. No match contributes kicks to both training and test partitions. An inner grouped validation split is used for early stopping and fold-local preprocessing. Ten split seeds quantify training and partition variation. The main statistic is \prank, obtained by converting predictions to within-fold ranks $r_{ij}=(\operatorname{rank}(p_{ij})-0.5)/n_j$ before pooling them across held-out events and computing the goal-versus-miss ranking AUC. This removes arbitrary probability-scale differences between folds while preserving within-fold ordering.
+
+For each arm, 200 full-label permutation refits form a null distribution for \prank \citep{good2005}. We report the ten-seed mean and standard deviation together with the right-tail permutation probability. Secondary metrics are AUROC, AUPRC, goal-class F1 at threshold 0.5, balanced accuracy, Brier score, and log loss. Goal-class F1 uses the observed 72.2\% goal rate and is therefore auxiliary. For uncertainty intervals, 2,000 bootstrap resamples draw complete matches with replacement, following the cluster principle introduced by Efron \citep{efron1979}. The implementation uses scikit-learn for the classical estimators and split construction \citep{pedregosa2011}. All scaling, history shrinkage, early stopping, and model selection are fit inside the corresponding training or validation partitions.
+
+\section{Empirical Analysis}
+
+\subsection{Main results}
+
+Table~\ref{tab:main} summarizes the principal arms. Context LR is strongest among the frozen models but remains below its permutation p95. Frozen FER is below the null mean, ImageNet is indistinguishable from it, and adding FER to context lowers the ranking statistic. Fine-tuning and both M4 variants fail their paired tests.
+
+\begin{table}[t]
+\caption{Core results over ten split seeds. The primary statistic is \prank. F1 intervals use 2,000 match-cluster bootstrap resamples. The dagger marks the degraded single-seed paired permutation protocol used for M2 and M4.}
+\label{tab:main}
+\centering
+\small
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{lccc}
+\toprule
+Arm & \prank mean $\pm$ SD & test $p$ & F1 mean $\pm$ SD [95\% CI]\\
+\midrule
+B1v2 context LR & .553 $\pm$ .017 & .060 & .838 $\pm$ .001 [.803,.871]\\
+M1 frozen FER & .467 $\pm$ .028 & .821 & .780 $\pm$ .013 [.746,.811]\\
+B4 ImageNet & .464 $\pm$ .021 & .831 & .780 $\pm$ .009 [.750,.812]\\
+M3v2 fused & .467 $\pm$ .028 & .811 & .781 $\pm$ .012 [.746,.811]\\
+M2 partial FT & .488 $\pm$ .024 & .475$^{\dagger}$ & .837 $\pm$ .004 [.802,.870]\\
+M4\_lr & .505 $\pm$ .022 & .881$^{\dagger}$ & .834 $\pm$ .004 [.798,.868]\\
+M4\_mlp & .491 $\pm$ .024 & .297$^{\dagger}$ & .833 $\pm$ .005 [.798,.867]\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:main-results} shows the complete comparison. No main arm exceeds the permutation criterion. M1--B4 differs by $+0.003$ ($p=0.483$), while M3v2--B1v2 is $-0.086$ across all ten seeds. F1 is auxiliary because goals are the common class.
+
+The ranking metric separates the weak context reference from the visual arms. B1v2 reaches .553 against a null p95 of about .554, whereas M1, B4, and M3v2 remain near or below their null means with $p=.821$, .831, and .811. The F1 values of .780--.838 therefore should not be read as evidence of useful discrimination. They are affected by the 72.2\% goal rate and the fixed 0.5 threshold, while \prank measures held-out ordering.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.96\textwidth]{../results/figures/fig1_main_results.pdf}
+\caption{Main ranking results and preregistered paired comparisons. Error bars in the left panel show split-seed standard deviation. The shaded regions show the permutation-null mean to 95th-percentile range.}
+\label{fig:main-results}
+\end{figure*}
+
+\subsection{Robustness and ablations}
+
+The random-event split shows no measurable inflation relative to match-disjoint evaluation. Across B1v2, B2v2, M1, and M3v2, random-minus-matched differences range from $-0.010$ to $-0.003$ and none passes the paired test. Context ablation finds no stable positive feature group. The rechecked \texttt{minus\_history} increment has $p=0.109$, while the full recipe shifts from .553 to .541 across seed sets. The quality subset lowers both M1 and the image-independent control. M2's Brier/log-loss change reflects base-rate shrinkage, and unstable M4 weights are not interpreted as FER evidence.
+
+The fine-tuning and fusion controls clarify the failure mode. M2 reaches .488 versus .467 for M1, but the paired test gives $p=.475$; a head-only control reaches .485, leaving little evidence that unfreezing the encoder adds information. M4\_lr reaches .505 versus .553 for B1v2 ($p=.881$), and M4\_mlp reaches .491 versus .495 for B2v2 ($p=.297$). The fusion layer therefore does not recover a stable FER increment, even when the context branch is changed.
+
+\section{Discussion}
+
+Across the primary comparisons, the data do not show stable independent predictive value from the pre-kick FER representation. Frozen FER and ImageNet perform similarly, fine-tuning does not pass its paired test, and fusion does not improve context. Context LR remains weak and seed-sensitive.
+
+This is a bounded feasibility result. With 385 observations, effects below the permutation 95th-percentile range of approximately 0.55--0.57 are difficult to distinguish from the null. The footage is low-resolution, 27 kicks lack qualified face frames, and the split is not player-disjoint. Venue and competition features were omitted, the attribution analysis was not executed, and M4 uses restricted logit fusion. The claim therefore concerns cross-match evaluation under this protocol.
+
+Facial representations are statistical inputs for an observed event label, not measurements of emotion, identity, or psychological condition. Original videos and face crops are not redistributed, and the models are not proposed for gambling, employment, surveillance, or other high-risk decisions \citep{barrett2019}.
+
+\section{Conclusion}
+
+We evaluated whether pretrained facial expression representations add predictive information to penalty-shootout outcome models. In 40 matches and 385 valid pre-kick samples, strict match-disjoint evaluation found no stable FER-only, fine-tuning, or fusion advantage beyond the available context features. ImageNet controls, quality-subset checks, and independent seed rechecks support the same interpretation. The appropriate conclusion is that no FER increment was detectable under the present sample size, broadcast quality, and analysis protocol. Larger and higher-quality collections, recovered player identifiers, and a preregistered player-disjoint evaluation are the next requirements for testing whether a stronger effect exists.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\clearpage
+\appendix
+\section{Extended results and reproducibility}
+
+The complete arm list includes B1v2, B2v2, B3\_vgaf, B3\_b2\_7, M1, B4, M3v2, VAemb, single356, multimean, multiva2, M2, M4\_lr, M4\_mlp, M4\_lr\_tr, and M4\_mlp\_tr. The primary reports are \texttt{results/reports/summary\_5fold\_20261104.md}, \texttt{results/reports/f1\_bootstrap\_20261115\_123741.json}, and the corresponding CSV tables. The evaluation scripts record the folds, split seeds, permutation seeds, and deterministic initialization settings. Figures~\ref{fig:seed-stability} and~\ref{fig:signal-map} show the extended stability and quality-subset diagnostics.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{../results/figures/fig2_seed_stability.pdf}
+\caption{Split-seed stability for the main and recheck seed sets.}
+\label{fig:seed-stability}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{../results/figures/fig3_signal_map.pdf}
+\caption{Descriptive context effects and the quality-subset comparison.}
+\label{fig:signal-map}
+\end{figure}
+
+\subsection{Implementation details}
+
+The context LR and FER LR arms use fold-local standardization and fixed regularization settings recorded in the evaluation scripts. The MLP arms use seeded initialization, early stopping on the inner validation split, and fold-local scaling. M2 unfreezes the last encoder stage and classification head with the recorded discriminative learning rates while keeping batch-normalization statistics frozen. M4 fits a three-parameter standardized-logit fusion layer. The bootstrap uses 2,000 match-level resamples and percentile limits. The label permutation analyses refit the full evaluation pipeline for 200 permutations unless a report explicitly records the degraded single-seed protocol.
+
+\subsection{Scope deviations}
+
+The final analysis does not include venue status or competition category, and it does not execute the planned attribution analysis. The quality subset uses complete-match filtering rather than independent sample filtering. M4 uses logit fusion instead of the originally planned high-dimensional feature interaction model. These deviations are recorded in the project summary and delimit the claims made in the main text.
+
+\end{document}
