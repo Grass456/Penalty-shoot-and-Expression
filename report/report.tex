@@ -58,7 +58,7 @@ The visual branch selects a face crop, caches FER emotion probabilities and an i
 
 \subsection{Model families}
 
-The core comparison includes a majority baseline, B1v2 context logistic regression, B2v2 context MLP, B3 emotion-probability classifiers, M1 frozen FER embeddings, B4 ImageNet embeddings, M2 partial FER fine-tuning, M3v2 frozen FER plus context, and M4 logit fusion. The ImageNet control uses a generic visual representation rather than an expression-specific encoder \citep{deng2009}. The context and FER branches are trained separately in the main fusion experiment. The fusion layer combines standardized branch logits with three fitted parameters. This design keeps the two branches attributable, while leaving higher-dimensional feature interaction for future work. Figure~\ref{fig:pipeline} summarizes the resulting information flow.
+The core comparison includes a majority baseline, B1 context logistic regression, B2 context MLP, B3 emotion-probability classifiers, M1 frozen FER embeddings, B4 ImageNet embeddings, M2 partial FER fine-tuning, M3 frozen FER plus context, and M4 logit fusion. The ImageNet control uses a generic visual representation rather than an expression-specific encoder \citep{deng2009}. The context and FER branches are trained separately in the main fusion experiment. The fusion layer combines standardized branch logits with three fitted parameters. This design keeps the two branches attributable, while leaving higher-dimensional feature interaction for future work. Figure~\ref{fig:pipeline} summarizes the resulting information flow.
 
 For a context vector $x_i$, the logistic baseline estimates $p_i=\sigma(\beta^{\top}x_i+b)$. In the fusion arms, standardized branch logits are combined as
 \begin{equation}
@@ -84,7 +84,7 @@ For each arm, 200 full-label permutation refits form a null distribution for \pr
 
 \subsection{Main results}
 
-Table~\ref{tab:main} summarizes the principal arms. Context LR is closest to the permutation threshold, but its $p=.060$ does not meet the prespecified criterion. Frozen FER, ImageNet, fusion, fine-tuning, and both M4 variants all fail their corresponding tests.
+Table~\ref{tab:main} summarizes the principal arms. Context LR is closest to the permutation threshold, but its $p=.060$ does not meet the prespecified criterion. Frozen FER, ImageNet, fine-tuning, and logits fusion all fail their corresponding tests.
 
 \begin{table}[t]
 \caption{Core results over ten split seeds. The primary statistic is \prank. F1 intervals use 2,000 match-cluster bootstrap resamples. The dagger marks the degraded single-seed paired permutation protocol used for M2 and M4.}
@@ -96,34 +96,34 @@ Table~\ref{tab:main} summarizes the principal arms. Context LR is closest to the
 \toprule
 Arm & \prank mean $\pm$ SD & test $p$ & F1 mean $\pm$ SD [95\% CI]\\
 \midrule
-B1v2 context LR & .553 $\pm$ .017 & .060 & .838 $\pm$ .001 [.803,.871]\\
+B1 context LR & .553 $\pm$ .017 & .060 & .838 $\pm$ .001 [.803,.871]\\
+B2 context MLP & .495 $\pm$ .028 & .577 & .696 $\pm$ .093 [.659,.730]\\
 M1 frozen FER & .467 $\pm$ .028 & .821 & .780 $\pm$ .013 [.746,.811]\\
 B4 ImageNet & .464 $\pm$ .021 & .831 & .780 $\pm$ .009 [.750,.812]\\
-M3v2 fused & .467 $\pm$ .028 & .811 & .781 $\pm$ .012 [.746,.811]\\
+M3 fused & .467 $\pm$ .028 & .811 & .781 $\pm$ .012 [.746,.811]\\
 M2 partial FT & .488 $\pm$ .024 & .475$^{\dagger}$ & .837 $\pm$ .004 [.802,.870]\\
-M4\_lr & .505 $\pm$ .022 & .881$^{\dagger}$ & .834 $\pm$ .004 [.798,.868]\\
-M4\_mlp & .491 $\pm$ .024 & .297$^{\dagger}$ & .833 $\pm$ .005 [.798,.867]\\
+M4 & .505 $\pm$ .022 & .881$^{\dagger}$ & .834 $\pm$ .004 [.798,.868]\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Figure~\ref{fig:main-results} shows the complete comparison. The FER--ImageNet difference is only $+0.003$ ($p=.483$), and adding FER to context changes the ranking by $-0.086$. F1 is auxiliary because goals are the common class, whereas \prank is the primary ranking measure.
+Figure~\ref{fig:main-results} shows the complete comparison. The FER--ImageNet difference is only $+0.003$ ($p=.483$), and adding FER to context changes the ranking by $-0.086$.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig1_main_results.pdf}
-\caption{Main ranking results and preregistered paired comparisons. Error bars in the left panel show split-seed standard deviation. The shaded regions show the permutation-null mean to 95th-percentile range.}
+\includegraphics[width=0.8\textwidth]{figures/fig1_comparisons.pdf}
+\caption{Four main comparisons.}
 \label{fig:main-results}
 \end{figure*}
-
-\subsection{Robustness and ablations}
-
-The random-event split does not show inflation relative to match-disjoint evaluation. Random-minus-matched differences range from $-0.010$ to $-0.003$, with no paired test passing. Context ablations, the \texttt{minus\_history} recheck, and the quality-subset analysis likewise produce no stable change in the main conclusion.
 
 \subsection{Additional representation and temporal analyses}
 In addition, I compare eight-emotion embedding with continuous Valence-arousal embedding and single-frame inputs with multi-frame inputs.
 
-The VA multi-task embedding has mean \prank .490 versus .467 for the eight-emotion FER embedding, with a paired difference of $+0.024$ and $p=.164$. Valence--arousal supervision therefore does not yield a reliable improvement. On the same 356-observation subset, multi-frame mean aggregation reaches .494 versus .449 for single-frame input, with $\Delta=+0.045$ and $p=.134$. This direction is consistent with reduced frame-level noise, but it is not statistically stable.
+Figure~\ref{fig:main-results} shows the VA multi-task embedding has mean \prank .490 versus .467 for the eight-emotion FER embedding, with a paired difference of $+0.024$ and $p=.164$. Valence--arousal supervision therefore does not yield a reliable improvement. On the same 356-observation subset, multi-frame mean aggregation reaches .494 versus .449 for single-frame input, with $\Delta=+0.045$ and $p=.134$. This direction is consistent with reduced frame-level noise, but it is not statistically stable.
+
+\subsection{Robustness and other ablations}
+
+The random-event split does not show inflation relative to match-disjoint evaluation. Context ablations and the quality-subset analysis likewise produce no stable change in the main conclusion. The details of this part are in the \appendixautorefname.
 
 \section{Discussion}
 
@@ -146,30 +146,49 @@ This project tests whether a pretrained facial expression representation adds pr
 \appendix
 \section{Extended results and reproducibility}
 
-The complete arm list includes B1v2, B2v2, B3\_vgaf, B3\_b2\_7, M1, B4, M3v2, VAemb, single356, multimean, multiva2, M2, M4\_lr, M4\_mlp, M4\_lr\_tr, and M4\_mlp\_tr. The evaluation scripts record the folds, split seeds, permutation seeds, and deterministic initialization settings. Figures~\ref{fig:seed-stability} and~\ref{fig:signal-map} show the extended stability and quality-subset diagnostics.
+The complete arm list includes B1, B2, B3\_vgaf, B3\_b2\_7, M1, B4, M3, VAemb, single356, multimean, multiva2, M2, M4\_lr, M4\_mlp.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\linewidth]{figures/fig1_all_arms.pdf}
+\caption{All arms included in this project.}
+\label{fig:all-arms}
+\end{figure}
+
+All of the content can be found and reproduced in my published repository. (https://github.com/Grass456/Penalty-shoot-and-Expression)
+
+\subsection{Split-seed stability of B1 and M1}
+
+Across the ten main split seeds (2027--2036), B1 reaches $\prank=.553\pm.017$, whereas M1 reaches $.467\pm.028$. The per-seed values vary visibly, but B1 remains above M1 throughout this seed set. This appendix view reports partition variability without changing the primary match-disjoint evaluation.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.92\linewidth]{figures/fig2_seed_stability.pdf}
-\caption{Split-seed stability for the main and recheck seed sets.}
+\caption{Split-seed stability for B1 and M1 over the ten main split seeds. Dashed lines show the corresponding ten-seed means.}
 \label{fig:seed-stability}
 \end{figure}
 
+\subsection{Context feature-group ablation}
+
+Removing round/order, score-state, or history features gives $\prank=.539\pm.016$, $.525\pm.032$, and $.563\pm.014$, respectively, compared with $.553\pm.017$ for the full context vector. These changes are descriptive because the apparent history effect was not reproduced in the independent recheck with new split seeds ($p_{\Delta}=.109$).
+
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.92\linewidth]{figures/fig3_signal_map.pdf}
-\caption{Descriptive context effects and the quality-subset comparison.}
-\label{fig:signal-map}
+\includegraphics[width=0.92\linewidth]{figures/fig3_context_ablation.pdf}
+\caption{Primary context feature-group ablation. Points and horizontal bars show ten-seed means and standard deviations of $\prank$.}
+\label{fig:context-ablation}
 \end{figure}
 
-All of the content can be found in my published repository. (https://github.com/Grass456/Penalty-shoot-and-Expression)
+\subsection{A7 high-quality subset}
 
-\subsection{Implementation details}
+The A7-high subset keeps complete matches whose face crops have a short side of at least 80 pixels, yielding 333 kicks from 35 matches. On this subset, M1 and M3 obtain $\prank=.449\pm.032$ and $.449\pm.033$, while the image-independent B1 control obtains $.542\pm.026$. M1 does not exceed its within-subset permutation null ($p=.935$, null $p95=.570$), and the simultaneous decrease of B1 indicates that subset composition changes the evaluation target rather than isolating image quality.
 
-The context LR and FER LR arms use fold-local standardization and fixed regularization settings recorded in the evaluation scripts. The MLP arms use seeded initialization, early stopping on the inner validation split, and fold-local scaling. M2 unfreezes the last encoder stage and classification head with the recorded discriminative learning rates while keeping batch-normalization statistics frozen. M4 fits a three-parameter standardized-logit fusion layer. The bootstrap uses 2,000 match-level resamples and percentile limits. The label permutation analyses refit the full evaluation pipeline for 200 permutations unless a report explicitly records the degraded single-seed protocol.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/fig3_a7_quality.pdf}
+\caption{Results on the A7-high subset defined by a crop short side of at least 80 pixels. The panel reports B1, M1, and M3 on the same 333-kick subset.}
+\label{fig:a7-quality}
+\end{figure}
 
-\subsection{Scope deviations}
-
-The final analysis does not include venue status or competition category, and it does not execute the planned attribution analysis. The quality subset uses complete-match filtering rather than independent sample filtering. M4 uses logit fusion instead of the originally planned high-dimensional feature interaction model. These deviations are recorded in the project summary and delimit the claims made in the main text.
 
 \end{document}

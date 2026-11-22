@@ -14,9 +14,11 @@
 | reports/minus_history_recheck_criteria_preregistered.txt | A5 `minus_history` 独立复核的预注册判据（C1–C4，seed 2037–2046，含 2026-11-15 跑后追加的结果段） |
 | reports/minus_history_recheck_20261115_100010.json | 上述复核的报告：新 seed 集合下 Δ=+0.0241、p_Δ=0.109，**H10 未成立**（见 summary §3 第 3 条） |
 | reports/f1_bootstrap_20261115_123741.json + tables/f1_bootstrap_20261115_123741_*.csv | 主重复划分臂（含 M2/M4）的 goal-class F1、AUROC/AUPRC 等指标，以及按 `match_id` 聚类的 bootstrap 95% CI；由 `scripts/eval_f1_bootstrap.py` 生成 |
-| figures/fig1_main_results.{pdf,png} | 论文图 1：11 臂 pooled_rank ± sd 对零分布（左）+ 五个配对比较（右）。`scripts/make_figures.py` 生成，只读既有报告 |
-| figures/fig2_seed_stability.{pdf,png} | 论文图 2：B1v2/M1（2027–36）与 full/minus_history（2037–46）的逐 seed 折线，显示点估计随 seed 集合漂移 |
-| figures/fig3_signal_map.{pdf,png} | 论文图 3：(a) 单变量 context 效应（描述性，由 events.csv 算）；(b) A7 子集下两臂同步下降 |
+| figures/fig1_all_arms.{pdf,png} | 论文图 1a：14 个指定 arm 的 pooled_rank 均值 ± sd，对照主表置换零分布 |
+| figures/fig1_comparisons.{pdf,png} | 论文图 1b：M1 - B4、M4_lr - B1、VAemb - M1、single356 - multimean 四个配对比较 |
+| figures/fig2_seed_stability.{pdf,png} | 论文图 2：B1 和 M1 在主 split seeds 2027–2036 上的逐 seed pooled_rank 折线 |
+| figures/fig3_context_ablation.{pdf,png} | 论文图 3a：Full context、去除 round/order、score state、history 的 context 特征组消融 |
+| figures/fig3_a7_quality.{pdf,png} | 论文图 3b：A7-high（crop short side >= 80 px）子集中的 B1、M1、M3 结果 |
 | reports/diag_branch_logits_20261109_120203.json | M4 跑前诊断（两支 logit 尺度/相关，描述性不判定）—— 见 summary §4.5 第 3 条 |
 | reports/archive_lomo40.md | 40 折 LOMO 时期（已作废）的结果摘要 + 方法论教训；原始文件在 git 提交 3ed0a7b |
 | reports/*.json + tables/*.csv | 各脚本的原始输出，同名成对（`<脚本前缀>_<时间戳>`），对应关系见 summary 第 1–5 节 |
